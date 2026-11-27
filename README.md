@@ -8,15 +8,17 @@
 
 ### 让 AI 助手安装
 
-把下面的提示词粘贴到本机运行的 AI 助手里。助手需要能够运行终端命令，并获得目标笔记库的写入权限。
+把下面的提示词粘贴到本机运行的 AI 助手里。助手需要能在本机下载、解压文件，并获得目标笔记库的写入权限。可以通过终端或桌面操作完成。
 
 | AI 助手 | 从哪里开始 |
 | --- | --- |
 | [OpenAI Codex](https://learn.chatgpt.com/docs/codex/cli) | 在 Codex 桌面端选择本地工作区，或在终端运行 `codex`，然后粘贴提示词。 |
 | [Claude Code](https://code.claude.com/docs/en/quickstart) | 在本机终端运行 `claude`，粘贴提示词，按提示批准需要的下载或文件写入。 |
 | [Google Antigravity](https://antigravity.google/docs/cli-features) | 在本机 Antigravity IDE 的 Agent 面板粘贴提示词，或在本机终端运行 `agy`。在面板中选用本地会话。 |
+| [DeepSeek Harness](https://www.deepseek.com/harness/) | 在桌面端打开本地工作区，粘贴提示词。允许终端下载、解压，并写入指定的 Obsidian 库。 |
+| [豆包工作](https://www.doubao.com/work) | 在电脑版新建「工作任务」，把运行环境选为「本地电脑」，再粘贴提示词。确认它能把文件写入目标库。 |
 
-只有聊天功能的网页对话可以用这段提示词生成操作指导。要让助手完成安装，请选能访问本机文件的会话。安装流程已用 GitHub 发布的 ZIP 在 macOS 临时库核对过，包括解压、更新时保留 `data.json` 和离线查词。若助手无权操作 Obsidian 界面，可以在文件安装后手动启用插件。
+只有聊天功能的网页对话可以用这段提示词生成操作指导。要让助手完成安装，请选能访问本机文件的会话。安装流程已用 GitHub 发布的 ZIP 在 macOS 临时库核对过，包括解压、更新时保留 `data.json` 和离线查词。豆包工作和 DeepSeek Harness 的能力已按文档核对，实际安装流程由 Codex 验证。若助手无权操作 Obsidian 界面，可以在文件安装后手动启用插件。
 
 ```text
 请帮我在当前电脑的 Obsidian 桌面端安装或更新「词屿」（Ciyu Study），请实际操作并核对结果。
