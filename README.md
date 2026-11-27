@@ -4,7 +4,7 @@
 
 ## 安装
 
-1. 从 [GitHub Releases](https://github.com/bgk26/ciyu-study/releases/latest) 下载 `ciyu-study-plugin.zip`。解压安装包，把其中的 `ciyu-study` 文件夹放进当前库的 `.obsidian/plugins/`。如果库使用自定义配置目录，把它放进该目录的 `plugins/`。
+1. 从 [GitHub Releases](https://github.com/yannie2025/ciyu-study/releases/latest) 下载 `ciyu-study-plugin.zip`。解压安装包，把其中的 `ciyu-study` 文件夹放进当前库的 `.obsidian/plugins/`。如果库使用自定义配置目录，把它放进该目录的 `plugins/`。
 2. 在 Obsidian 中打开「设置 → 第三方插件」。开启第三方插件，刷新列表后启用 **Ciyu Study**。
 3. 从 [Ollama 官方下载页](https://ollama.com/download) 安装并启动 Ollama。在「设置 → Ciyu Study」执行「检测」，在推荐模型旁点「下载」，最后点「运行测试」。默认模型是 [Qwen2.5 1.5B](https://ollama.com/library/qwen2.5:1.5b)，下载约 986 MB。已有本地模型可从列表切换，或者填写模型名称后下载。
 4. 点左侧工具栏的翻译图标，或从命令面板打开「Ciyu Study: 搜词翻译」。
