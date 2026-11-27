@@ -1,6 +1,6 @@
 import type { ChangelogEntry } from './types';
 
-export const CIYU_VERSION = '0.7.7';
+export const CIYU_VERSION = '0.8.2';
 
 export const CIYU_CHANGELOG_FOREWORD = {
   title: '🏝️ 关于「词屿」的缘起',
@@ -13,6 +13,51 @@ export const CIYU_CHANGELOG_FOREWORD = {
 } as const;
 
 export const CIYU_CHANGELOG: ReadonlyArray<ChangelogEntry> = [
+  {
+    version: '0.8.2',
+    date: '2026-11-27',
+    title: '离线词库中心 Apple Inset Grouped 分组重构',
+    highlights: [
+      '「词库」管理页全面重构为 Apple 系统设置风格：将 8 套离线词库按「基础通用 / 国内升学与四六级考研 / 出国留学考试」三组清晰归类',
+      '每套词库配备专属 iOS 27 多层玻璃彩色 Squircle 图标与 44×26 原生果冻拨动开关，一键启停并支持「设为首选」，顶部实时统计已启用词库数与总覆盖词条数',
+    ],
+  },
+  {
+    version: '0.8.1',
+    date: '2026-11-27',
+    title: '新增考研、雅思、托福、GRE 与高考 5 套官方离线词库',
+    highlights: [
+      '基于 MIT 协议官方 ECDICT 词源，离线词库中心新增 5 套常用考试词库：考研英语（4,801 词）、雅思 IELTS（5,040 词）、托福 TOEFL（6,974 词）、GRE 核心词库（7,504 词）与高考英语（3,674 词），支持按需启用与离线秒查',
+      '同步更新离线词库构建脚本 scripts/prepare-dictionaries.py 与说明文档',
+    ],
+  },
+  {
+    version: '0.7.10',
+    date: '2026-11-27',
+    title: '查词搜索记录逐条删除与一键清空',
+    highlights: [
+      '查词页「最近搜索」记录升级：保留最多 10 条历史词条，每条胶囊右侧新增 × 按钮支持逐个删除，右上角新增「清空全部」一键清空并弹出 Sonner 轻提示反馈',
+    ],
+  },
+  {
+    version: '0.7.9',
+    date: '2026-11-27',
+    title: '自定义配色一键分享导入与窄侧栏极限排版精修',
+    highlights: [
+      '设置页「自定义配色」新增「复制配色」与「导入配色」，支持一键导出 4 色 JSON 备份/分享，并支持直接粘贴 JSON 或 4 个 #hex 色值实时导入应用',
+      '针对 300px 窄侧栏完成极限排版巡检：主题色板自动收敛为对称 2 列、设置行与分段控件智能换行防溢出、六级子导航与 Section 标签紧凑截断更清爽',
+    ],
+  },
+  {
+    version: '0.7.8',
+    date: '2026-11-27',
+    title: '精听键盘流、Apple 细轨道音频条与查词细节收尾',
+    highlights: [
+      '六级精听页新增免鼠标键盘快捷操控：Space 播放/暂停、← / → 快退/快进 5 秒、R 一键重听当前题组（输入焦点自动避让）',
+      '精听音频进度条升级为 Apple 风格 4px 极细轨道（悬停/拖动自动舒展至 6px），与设置页滑块质感保持统一',
+      '查词搜索胶囊新增克制的 ↵ 回车键帽提示与最近查词胶囊按压微缩回弹；右上角版本更新日志浮窗同步统一为「即将开源至 GitHub」信息行',
+    ],
+  },
   {
     version: '0.7.7',
     date: '2026-11-27',

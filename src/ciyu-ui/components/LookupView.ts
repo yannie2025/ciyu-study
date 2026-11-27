@@ -49,17 +49,22 @@ export function createLookupView(
     input.focus();
   });
 
+  const enterHint = el('kbd', 'ciyu-kbd ciyu-search-kbd', '↵');
+  enterHint.setAttribute('aria-hidden', 'true');
+
   const submitBtn = el('button', 'ciyu-search-submit');
   submitBtn.type = 'submit';
   submitBtn.title = '按 Enter 查询';
   submitBtn.appendChild(el('span', undefined, '查词'));
   submitBtn.appendChild(createIcon('corner-down-left', 'sm'));
 
-  capsule.append(searchIcon, input, clearBtn, submitBtn);
+  capsule.append(searchIcon, input, enterHint, clearBtn, submitBtn);
   form.appendChild(capsule);
 
   input.addEventListener('input', () => {
-    clearBtn.hidden = input.value.length === 0;
+    const empty = input.value.length === 0;
+    clearBtn.hidden = empty;
+    enterHint.hidden = !empty;
     callbacks.onQueryChange?.(input.value);
   });
 
@@ -91,6 +96,7 @@ export function createLookupView(
   function renderStage(): void {
     if (input.value !== props.query) input.value = props.query;
     clearBtn.hidden = input.value.length === 0;
+    enterHint.hidden = input.value.length > 0;
     shortcuts.hidden = !input.value.trim() || props.status === 'success' || shortcuts.children.length === 0;
     if (callbacks.onSpeakQuery) updateSpeechButton(readInput, props.query, Boolean(props.isSpeaking));
     submitBtn.disabled = props.status === 'loading';
@@ -123,20 +129,50 @@ export function createLookupView(
       );
 
       if (props.recentQueries.length > 0) {
+        const recentSection = el('div', 'ciyu-recent-section');
+        const recentHead = el('div', 'ciyu-recent-head');
+        recentHead.appendChild(el('span', 'ciyu-section-label', '最近搜索'));
+        if (callbacks.onClearRecentQueries) {
+          const clearAllBtn = el('button', 'ciyu-recent-clear-btn', '清空全部');
+          clearAllBtn.type = 'button';
+          clearAllBtn.setAttribute('aria-label', '清空全部搜索记录');
+          clearAllBtn.addEventListener('click', () => callbacks.onClearRecentQueries?.());
+          recentHead.appendChild(clearAllBtn);
+        }
+        recentSection.appendChild(recentHead);
+
         const chips = el('div', 'ciyu-quick-picks');
-        chips.setAttribute('aria-label', '快速体验词条');
+        chips.setAttribute('aria-label', '最近搜索记录');
         for (const item of props.recentQueries) {
+          const wrap = el('span', 'ciyu-recent-chip-wrap');
           const chip = el('button', 'ciyu-quick-chip', item);
           chip.type = 'button';
           chip.title = item;
           chip.addEventListener('click', () => {
             input.value = item;
             clearBtn.hidden = false;
+            enterHint.hidden = true;
             callbacks.onSearch?.(item);
           });
-          chips.appendChild(chip);
+          wrap.appendChild(chip);
+
+          if (callbacks.onRemoveRecentQuery) {
+            const delBtn = el('button', 'ciyu-quick-chip-del');
+            delBtn.type = 'button';
+            delBtn.title = `删除「${item}」`;
+            delBtn.setAttribute('aria-label', `删除搜索记录 ${item}`);
+            delBtn.appendChild(createIcon('x', 'sm'));
+            delBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              callbacks.onRemoveRecentQuery?.(item);
+            });
+            wrap.appendChild(delBtn);
+          }
+
+          chips.appendChild(wrap);
         }
-        card.appendChild(chips);
+        recentSection.appendChild(chips);
+        card.appendChild(recentSection);
       }
 
       stage.appendChild(card);

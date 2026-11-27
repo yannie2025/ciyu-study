@@ -106,48 +106,13 @@ export function createCiyuSidebar(
     for (const para of CIYU_CHANGELOG_FOREWORD.paragraphs) {
       forewordBox.appendChild(el('p', 'ciyu-changelog-foreword-text', para));
     }
-    if (CIYU_CHANGELOG_FOREWORD.wechatId) {
-      const wechatId = CIYU_CHANGELOG_FOREWORD.wechatId;
-      const contactRow = el('div', 'ciyu-changelog-contact-row');
-      contactRow.appendChild(el('span', 'ciyu-changelog-foreword-text', '💬 交流与反馈 · 微信：'));
-      const wechatBtn = el('button', 'ciyu-wechat-copy-trigger');
-      wechatBtn.type = 'button';
-      wechatBtn.setAttribute('aria-label', `点击复制微信号 ${wechatId}`);
-      wechatBtn.append(
-        el('span', 'ciyu-wechat-id', wechatId),
-        el('span', 'ciyu-wechat-hint', '点击复制')
-      );
-      const hintEl = wechatBtn.querySelector<HTMLElement>('.ciyu-wechat-hint')!;
-      let resetTimer: number | null = null;
-      wechatBtn.addEventListener('click', () => {
-        const markCopied = () => {
-          wechatBtn.dataset.copied = 'true';
-          hintEl.textContent = '已复制 ✓';
-          if (resetTimer) window.clearTimeout(resetTimer);
-          resetTimer = window.setTimeout(() => {
-            delete wechatBtn.dataset.copied;
-            hintEl.textContent = '点击复制';
-          }, 1800);
-        };
-        if (navigator.clipboard?.writeText) {
-          navigator.clipboard.writeText(wechatId).then(markCopied).catch(() => {
-            const ta = document.createElement('textarea');
-            ta.value = wechatId;
-            ta.style.position = 'fixed';
-            ta.style.opacity = '0';
-            document.body.appendChild(ta);
-            ta.select();
-            try { document.execCommand('copy'); } catch {}
-            ta.remove();
-            markCopied();
-          });
-        } else {
-          markCopied();
-        }
-      });
-      contactRow.appendChild(wechatBtn);
-      forewordBox.appendChild(contactRow);
-    }
+    const openSourceRow = el('div', 'ciyu-changelog-contact-row');
+    const githubLink = el('a', 'ciyu-badge ciyu-badge--neutral', 'GitHub');
+    githubLink.href = 'https://github.com/yannie2025/ciyu-study';
+    githubLink.target = '_blank';
+    githubLink.rel = 'noopener noreferrer';
+    openSourceRow.append(el('span', 'ciyu-changelog-foreword-text', '开源项目'), githubLink);
+    forewordBox.appendChild(openSourceRow);
     changelogDrawer.appendChild(forewordBox);
 
     const list = el('ol', 'ciyu-changelog-list');

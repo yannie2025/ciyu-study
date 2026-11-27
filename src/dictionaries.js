@@ -2,6 +2,11 @@ const WORD_PACKS = [
   { id: 'common', label: '常用英汉词库', count: 27466 },
   { id: 'cet4', label: '大学英语四级 CET-4', count: 3846 },
   { id: 'cet6', label: '大学英语六级 CET-6', count: 5406 },
+  { id: 'ky', label: '考研英语', count: 4801 },
+  { id: 'ielts', label: '雅思 IELTS', count: 5040 },
+  { id: 'toefl', label: '托福 TOEFL', count: 6974 },
+  { id: 'gre', label: 'GRE 核心词库', count: 7504 },
+  { id: 'gk', label: '高考英语', count: 3674 },
 ];
 const FORM_LABELS = {
   p: '过去式', d: '过去分词', i: '现在分词', 3: '第三人称',

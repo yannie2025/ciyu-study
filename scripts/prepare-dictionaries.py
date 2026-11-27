@@ -8,7 +8,8 @@ from pathlib import Path
 project = Path(__file__).resolve().parent.parent
 directory = project / "dictionaries"
 directory.mkdir(exist_ok=True)
-packs = {"common": {}, "cet4": {}, "cet6": {}}
+TAG_PACKS = ("cet4", "cet6", "ky", "ielts", "toefl", "gre", "gk")
+packs = {"common": {}, **{k: {} for k in TAG_PACKS}}
 form_types = {"p", "d", "i", "3", "r", "t", "s", "0"}
 
 with Path(sys.argv[1]).open(encoding="utf-8-sig", newline="") as file:
@@ -19,7 +20,7 @@ with Path(sys.argv[1]).open(encoding="utf-8-sig", newline="") as file:
             continue
         tags = row["tag"].split()
         ranks = [int(rank) for rank in (row["frq"], row["bnc"]) if rank.isdigit() and int(rank)]
-        targets = [key for key in ("cet4", "cet6") if key in tags]
+        targets = [key for key in TAG_PACKS if key in tags]
         if ranks and min(ranks) <= 24000:
             targets.append("common")
         if not targets:

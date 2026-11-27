@@ -807,11 +807,17 @@
 .ciyu-ui .ciyu-scrubber-track {
   position: relative;
   width: 100%;
-  height: 6px;
+  height: 4px;
   border-radius: 999px;
-  background: var(--ciyu-border-outer);
+  background: color-mix(in srgb, var(--ciyu-text-tertiary) 26%, transparent);
   overflow: hidden;
   pointer-events: none;
+  transition: height 140ms var(--ciyu-ease-standard);
+}
+
+.ciyu-ui .ciyu-scrubber-bar:hover .ciyu-scrubber-track,
+.ciyu-ui .ciyu-scrubber-bar:active .ciyu-scrubber-track {
+  height: 6px;
 }
 
 .ciyu-ui .ciyu-scrubber-fill {

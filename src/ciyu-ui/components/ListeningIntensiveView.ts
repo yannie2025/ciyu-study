@@ -607,12 +607,14 @@ export function createListeningIntensiveView(
       const prevBtn = el('button', 'ciyu-icon-btn');
       prevBtn.type = 'button';
       prevBtn.title = '后退 5 秒';
+      prevBtn.title = '后退 5 秒（快捷键 ←）';
       prevBtn.setAttribute('aria-label', '后退 5 秒');
       prevBtn.appendChild(createIcon('skip-back', 'sm'));
       prevBtn.addEventListener('click', () => callbacks.onStepSkip?.(-5));
 
       const playBtn = el('button', 'ciyu-play-btn');
       playBtn.type = 'button';
+      playBtn.title = '播放 / 暂停（快捷键 Space）';
       playBtn.setAttribute('aria-label', props.playing ? '暂停' : '播放');
       playBtn.setAttribute('aria-pressed', String(props.playing));
       playBtn.appendChild(createIcon(props.playing ? 'pause' : 'play', 'md'));
@@ -621,7 +623,7 @@ export function createListeningIntensiveView(
 
       const nextBtn = el('button', 'ciyu-icon-btn');
       nextBtn.type = 'button';
-      nextBtn.title = '前进 5 秒';
+      nextBtn.title = '前进 5 秒（快捷键 →）';
       nextBtn.setAttribute('aria-label', '前进 5 秒');
       nextBtn.appendChild(createIcon('skip-forward', 'sm'));
       nextBtn.addEventListener('click', () => callbacks.onStepSkip?.(5));
@@ -756,7 +758,12 @@ export function createListeningIntensiveView(
 
         const replayBtn = el('button', 'ciyu-mini-btn');
         replayBtn.type = 'button';
-        replayBtn.append(createIcon('rotate-ccw', 'sm'), el('span', undefined, '重播本段'));
+        replayBtn.title = '按 R 键重听当前题组';
+        replayBtn.append(
+          createIcon('rotate-ccw', 'sm'),
+          el('span', undefined, '重播本段'),
+          el('kbd', 'ciyu-kbd', 'R')
+        );
         replayBtn.addEventListener('click', () => {
           if (clip.hasGroupClip && callbacks.onPlayGroupClip) {
             callbacks.onPlayGroupClip(activeGroup.id);
@@ -1441,6 +1448,52 @@ export function createListeningIntensiveView(
     }
   }
 
+  // 精听键盘快捷流：Space 播放/暂停，← / → 快退/快进 5 秒，R 重听当前题组
+  const onListeningKeydown = (e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!root.isConnected || root.hidden || root.offsetParent === null) return;
+    if (props.groups.length === 0) return;
+    const activeEl = root.ownerDocument?.activeElement as HTMLElement | null;
+    if (
+      activeEl &&
+      (activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable)
+    ) {
+      return;
+    }
+    if (e.code === 'Space' || e.key === ' ') {
+      e.preventDefault();
+      callbacks.onTogglePlay?.();
+      return;
+    }
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      callbacks.onStepSkip?.(-5);
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      callbacks.onStepSkip?.(5);
+      return;
+    }
+    if (e.key === 'r' || e.key === 'R') {
+      const grp = resolveActiveGroup(props);
+      if (grp) {
+        e.preventDefault();
+        if (callbacks.onPlayGroupClip && typeof grp.startSec === 'number') {
+          callbacks.onPlayGroupClip(grp.id);
+        } else if (typeof grp.startSec === 'number') {
+          callbacks.onSeek?.(grp.startSec);
+        }
+      }
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', onListeningKeydown);
+  }
+
   render();
 
   return {
@@ -1455,6 +1508,9 @@ export function createListeningIntensiveView(
       render();
     },
     destroy() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('keydown', onListeningKeydown);
+      }
       audioBarResizeObs?.disconnect();
       audioBarResizeObs = null;
       root.remove();

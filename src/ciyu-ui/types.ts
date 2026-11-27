@@ -145,6 +145,8 @@ export interface LookupViewCallbacks extends ResultCardCallbacks {
   onQueryChange?: (query: string) => void;
   onSearch?: (query: string) => void;
   onClearQuery?: () => void;
+  onRemoveRecentQuery?: (query: string) => void;
+  onClearRecentQueries?: () => void;
   onCancelSearch?: () => void;
   onRetrySearch?: (query: string) => void;
   onQuickTranslate?: (query: string) => void;

@@ -2,6 +2,7 @@ import { CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD, CIYU_VERSION } from '../change
 import { el } from '../dom';
 import { createIcon, type IconName } from '../icons';
 import { CIYU_COLOR_THEMES, DEFAULT_CUSTOM_THEME, normalizeHexColor } from '../themes';
+import { showCiyuToast } from '../toast';
 import type {
   CiyuCustomThemeColors,
   OllamaConnectionStatus,
@@ -841,18 +842,95 @@ export function createSettingsView(
         themeRows.push(row);
       }
 
-      const resetRow = el('div', 'ciyu-apple-row');
+      const resetRow = el('div', 'ciyu-apple-row ciyu-apple-row--stack');
+      const actionsHead = el('div', 'ciyu-slider-head');
       const actions = el('div', 'ciyu-theme-actions');
-      const resetCustomBtn = el('button', 'ciyu-mini-btn', '重置自定义色值');
+
+      const copyThemeBtn = el('button', 'ciyu-mini-btn ciyu-mini-btn--accent', '复制配色');
+      copyThemeBtn.type = 'button';
+      copyThemeBtn.addEventListener('click', () => {
+        const payload = JSON.stringify(currentCustom);
+        const done = () => showCiyuToast('已复制 4 色配色代码，可直接备份或分享', { tone: 'success' });
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(payload).then(done).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = payload;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); } catch {}
+            ta.remove();
+            done();
+          });
+        } else {
+          done();
+        }
+      });
+
+      const importForm = el('form', 'ciyu-endpoint-row');
+      importForm.hidden = true;
+      const importInput = el('input', 'ciyu-input');
+      importInput.type = 'text';
+      importInput.placeholder = '粘贴配色 JSON 或 4 个 #hex 色值…';
+      importInput.setAttribute('aria-label', '导入配色代码');
+      const applyImportBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm', '应用');
+      applyImportBtn.type = 'submit';
+      importForm.append(importInput, applyImportBtn);
+      importForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const raw = importInput.value.trim();
+        if (!raw) return;
+        let parsed: Partial<CiyuCustomThemeColors> | null = null;
+        try {
+          const obj = JSON.parse(raw);
+          if (obj && typeof obj === 'object') parsed = obj;
+        } catch {
+          const hexes = raw.match(/#[0-9a-fA-F]{3,6}\b/g);
+          if (hexes && hexes.length >= 4) {
+            parsed = {
+              accent: hexes[0],
+              canvasBg: hexes[1],
+              surfaceBg: hexes[2],
+              textPrimary: hexes[3],
+            };
+          }
+        }
+        if (!parsed) {
+          showCiyuToast('未识别到有效配色代码，请粘贴 JSON 或 4 个 #hex 色值', { tone: 'warning' });
+          return;
+        }
+        const next: CiyuCustomThemeColors = {
+          accent: normalizeHexColor(parsed.accent, currentCustom.accent),
+          canvasBg: normalizeHexColor(parsed.canvasBg, currentCustom.canvasBg),
+          surfaceBg: normalizeHexColor(parsed.surfaceBg, currentCustom.surfaceBg),
+          textPrimary: normalizeHexColor(parsed.textPrimary, currentCustom.textPrimary),
+        };
+        importForm.hidden = true;
+        importInput.value = '';
+        callbacks.onCustomThemeChange?.(next);
+        showCiyuToast('已导入并应用自定义配色', { tone: 'success' });
+      });
+
+      const importToggleBtn = el('button', 'ciyu-mini-btn', '导入配色');
+      importToggleBtn.type = 'button';
+      importToggleBtn.addEventListener('click', () => {
+        importForm.hidden = !importForm.hidden;
+        if (!importForm.hidden) importInput.focus();
+      });
+
+      const resetCustomBtn = el('button', 'ciyu-mini-btn', '重置色值');
       resetCustomBtn.type = 'button';
       resetCustomBtn.addEventListener('click', () =>
         callbacks.onCustomThemeChange?.({ ...DEFAULT_CUSTOM_THEME })
       );
-      const backSysBtn = el('button', 'ciyu-mini-btn', '切回黑白默认');
+      const backSysBtn = el('button', 'ciyu-mini-btn', '切回默认');
       backSysBtn.type = 'button';
       backSysBtn.addEventListener('click', () => callbacks.onSelectColorTheme?.('system'));
-      actions.append(resetCustomBtn, backSysBtn);
-      resetRow.append(el('span', 'ciyu-toggle-desc', '快捷重置'), actions);
+
+      actions.append(copyThemeBtn, importToggleBtn, resetCustomBtn, backSysBtn);
+      actionsHead.append(el('span', 'ciyu-toggle-desc', '分享与重置'), actions);
+      resetRow.append(actionsHead, importForm);
       themeRows.push(resetRow);
     }
 

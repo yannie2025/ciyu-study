@@ -141,7 +141,7 @@ class LookupSession {
         this.resultProvider = detailed ? '本地 AI' : sentenceOnly ? '本地整句翻译' : '本地快速翻译';
         this.setEntry(previous ? { ...entry, forms: previous.forms, pronunciation: previous.pronunciation || entry.pronunciation } : entry);
       }
-      this.plugin.recentQueries = [term, ...(this.plugin.recentQueries || []).filter(value => value !== term)].slice(0, 5);
+      this.plugin.recentQueries = [term, ...(this.plugin.recentQueries || []).filter(value => value !== term)].slice(0, 10);
       this.plugin.refresh(['lookup']);
     } catch (error) {
       if (request.signal.aborted || this.plugin.lifecycle.signal.aborted) return;
@@ -414,6 +414,17 @@ class LookupSession {
     return {
       onQueryChange: query => this.setQuery(query),
       onClearQuery: () => this.setQuery(''),
+      onRemoveRecentQuery: query => {
+        this.plugin.recentQueries = (this.plugin.recentQueries || []).filter(value => value !== query);
+        this.plugin.refresh(['lookup']);
+        this.update();
+      },
+      onClearRecentQueries: () => {
+        this.plugin.recentQueries = [];
+        this.plugin.refresh(['lookup']);
+        this.update();
+        new Notice('已清空全部搜索记录');
+      },
       onSearch: query => this.search(query),
       onCancelSearch: () => this.cancel(),
       onRetrySearch: query => this.search(query, false, true),

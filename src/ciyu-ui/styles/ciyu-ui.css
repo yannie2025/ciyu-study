@@ -3981,6 +3981,108 @@
   gap: 5px;
 }
 
+.ciyu-ui .ciyu-search-kbd {
+  flex-shrink: 0;
+  margin-right: 2px;
+  pointer-events: none;
+}
+
+.ciyu-ui .ciyu-chip:active:not(:disabled),
+.ciyu-ui .ciyu-quick-pick:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* 最近搜索记录：标题栏 + 逐条删除 + 一键清空 */
+.ciyu-ui .ciyu-recent-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.ciyu-ui .ciyu-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+}
+
+.ciyu-ui .ciyu-recent-clear-btn {
+  height: auto !important;
+  padding: 2px 7px !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ciyu-text-tertiary);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.ciyu-ui .ciyu-recent-clear-btn:hover {
+  color: var(--ciyu-danger);
+  background: var(--ciyu-danger-soft);
+}
+
+.ciyu-ui .ciyu-recent-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--ciyu-radius-pill);
+  background: var(--ciyu-glass-pill-bg);
+  border: 0.5px solid var(--ciyu-border-outer);
+  overflow: hidden;
+  max-width: 100%;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.ciyu-ui .ciyu-recent-chip-wrap:hover {
+  border-color: var(--ciyu-accent-border);
+  background: var(--ciyu-accent-soft);
+}
+
+.ciyu-ui .ciyu-recent-chip-wrap .ciyu-quick-chip {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0;
+  padding-right: 4px !important;
+}
+
+.ciyu-ui .ciyu-quick-chip-del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px !important;
+  min-height: 20px;
+  margin-right: 3px;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ciyu-text-tertiary);
+  opacity: 0.65;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.ciyu-ui .ciyu-quick-chip-del svg {
+  width: 11px;
+  height: 11px;
+}
+
+.ciyu-ui .ciyu-quick-chip-del:hover {
+  opacity: 1;
+  color: var(--ciyu-danger);
+  background: var(--ciyu-danger-soft);
+}
+
 /* macOS 极细圆角滚动条 */
 .ciyu-ui .ciyu-sidebar-body::-webkit-scrollbar,
 .ciyu-ui.ciyu-exam-workspace::-webkit-scrollbar,
@@ -4058,5 +4160,33 @@
 
   .ciyu-ui .ciyu-brand-meta {
     max-width: 96px;
+  }
+
+  .ciyu-ui .ciyu-apple-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .ciyu-ui .ciyu-apple-row {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .ciyu-ui .ciyu-exam-subnav-btn {
+    padding: 4px 8px !important;
+    font-size: 11px;
+  }
+
+  .ciyu-ui .ciyu-section-tab {
+    padding: 6px 2px !important;
+    font-size: 11px;
+  }
+
+  .ciyu-ui .ciyu-section-tab small {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }

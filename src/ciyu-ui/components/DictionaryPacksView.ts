@@ -1,13 +1,34 @@
 import { el } from '../dom';
-import { createIcon } from '../icons';
+import { createIcon, type IconName } from '../icons';
 import type {
+  DictionaryPackItem,
   DictionaryPacksViewCallbacks,
   DictionaryPacksViewProps,
   UIComponentHandle,
 } from '../types';
 
+type SquircleTone = 'blue' | 'cyan' | 'pink' | 'indigo' | 'purple' | 'orange' | 'green' | 'gray';
+
+const PACK_META: Record<string, { group: 'base' | 'domestic' | 'abroad'; tone: SquircleTone; icon: IconName }> = {
+  common: { group: 'base', tone: 'blue', icon: 'database' },
+  gk: { group: 'domestic', tone: 'green', icon: 'book-open' },
+  cet4: { group: 'domestic', tone: 'cyan', icon: 'book-open' },
+  cet6: { group: 'domestic', tone: 'indigo', icon: 'book-open' },
+  ky: { group: 'domestic', tone: 'orange', icon: 'sparkles' },
+  ielts: { group: 'abroad', tone: 'pink', icon: 'languages' },
+  toefl: { group: 'abroad', tone: 'purple', icon: 'languages' },
+  gre: { group: 'abroad', tone: 'gray', icon: 'layers' },
+};
+
+function createSquircle(icon: IconName, tone: SquircleTone): HTMLSpanElement {
+  const badge = el('span', `ciyu-squircle ciyu-squircle--${tone}`);
+  badge.setAttribute('aria-hidden', 'true');
+  badge.appendChild(createIcon(icon, 'sm'));
+  return badge;
+}
+
 /**
- * 离线词库管理视图（重绘版 · Apple System Settings Inset Grouped 风格）
+ * 离线词库管理视图（Apple System Settings Inset Grouped + iOS 27 Layered Squircle 风格）
  */
 export function createDictionaryPacksView(
   initialProps: DictionaryPacksViewProps,
@@ -18,27 +39,74 @@ export function createDictionaryPacksView(
   const root = el('section', 'ciyu-dict-packs-view');
   root.setAttribute('aria-label', '离线词库管理');
 
+  function renderPackRow(pack: DictionaryPackItem): HTMLDivElement {
+    const metaInfo = PACK_META[pack.id] ?? { group: 'base', tone: 'blue' as SquircleTone, icon: 'book-open' as IconName };
+    const row = el('div', 'ciyu-apple-row ciyu-apple-row--with-icon');
+
+    const lead = el('div', 'ciyu-apple-row-lead');
+    lead.appendChild(createSquircle(metaInfo.icon, metaInfo.tone));
+
+    const text = el('div', 'ciyu-toggle-text');
+    const titleLine = el('div', 'ciyu-paper-info');
+    titleLine.appendChild(el('strong', 'ciyu-toggle-title', pack.label));
+    if (pack.isPrimary) {
+      titleLine.appendChild(el('span', 'ciyu-badge ciyu-badge--ok', '首选'));
+    }
+    text.append(
+      titleLine,
+      el(
+        'span',
+        'ciyu-toggle-desc',
+        `${pack.count.toLocaleString('zh-CN')} 词 · ${pack.sourceLabel ?? 'ECDICT 离线包'}`
+      )
+    );
+    lead.appendChild(text);
+
+    const actions = el('div', 'ciyu-toolbar-actions');
+    if (pack.enabled && !pack.isPrimary) {
+      const primaryBtn = el('button', 'ciyu-mini-btn', '设为首选');
+      primaryBtn.type = 'button';
+      primaryBtn.addEventListener('click', () => callbacks.onSetPrimary?.(pack.id));
+      actions.appendChild(primaryBtn);
+    }
+
+    const sw = el('button', 'ciyu-switch');
+    sw.type = 'button';
+    sw.setAttribute('role', 'switch');
+    sw.setAttribute('aria-checked', String(pack.enabled));
+    sw.setAttribute('aria-label', `${pack.enabled ? '停用' : '启用'} ${pack.label}`);
+    sw.title = pack.enabled ? '点击停用该离线词库（不影响已收藏生词）' : '点击启用该离线词库';
+    sw.addEventListener('click', () => {
+      if (pack.enabled) callbacks.onRemovePack?.(pack.id);
+      else callbacks.onAddPack?.(pack.id);
+    });
+    actions.appendChild(sw);
+
+    row.append(lead, actions);
+    return row;
+  }
+
   function render(): void {
     root.innerHTML = '';
     const enabledPacks = props.packs.filter((p) => p.enabled);
     const primaryPack = props.packs.find((p) => p.isPrimary);
+    const totalActiveCount = enabledPacks.reduce((acc, p) => acc + p.count, 0);
 
     // 1. 顶部概览卡片
     const hero = el('div', 'ciyu-surface ciyu-dict-hero');
     const heroHead = el('div', 'ciyu-session-head');
     const titleGroup = el('div', 'ciyu-paper-info');
-    const iconBadge = el('span', 'ciyu-pack-icon ciyu-pack-icon--accent');
-    iconBadge.appendChild(createIcon('database', 'sm'));
+    titleGroup.appendChild(createSquircle('database', 'blue'));
     const textWrap = el('div');
     textWrap.append(
       el('h3', 'ciyu-exam-hero-title', '本地离线词库'),
       el(
         'p',
         'ciyu-exam-hero-sub',
-        '词屿内置 ECDICT 精简词典，无需联网即可毫秒级返回音标、中文释义与词形变化。'
+        '基于 MIT 协议 ECDICT 官方词源，离线毫秒级返回音标、中文释义、词形变化与词族拆解。'
       )
     );
-    titleGroup.append(iconBadge, textWrap);
+    titleGroup.appendChild(textWrap);
 
     heroHead.append(
       titleGroup,
@@ -50,77 +118,39 @@ export function createDictionaryPacksView(
     );
     hero.appendChild(heroHead);
 
-    if (primaryPack) {
-      const metaStrip = el('div', 'ciyu-next-review-tag');
-      metaStrip.textContent = `当前优先匹配：${primaryPack.label}（未命中时按顺序检索其余已启用词库）`;
-      hero.appendChild(metaStrip);
-    }
+    const metaStrip = el('div', 'ciyu-next-review-tag');
+    metaStrip.textContent = primaryPack
+      ? `首选词库：${primaryPack.label} · 已加载约 ${totalActiveCount.toLocaleString('zh-CN')} 词条（未命中时按序检索其余已启用词库）`
+      : '请至少启用一套离线词库以获得毫秒级离线查词体验';
+    hero.appendChild(metaStrip);
     root.appendChild(hero);
 
-    // 2. 词库分组列表
-    const groupCard = el('div', 'ciyu-surface ciyu-inset-group');
-    groupCard.appendChild(el('span', 'ciyu-section-label', '内置词典包'));
+    // 2. Apple Inset Grouped 分组列表
+    const sections: Array<{ key: 'base' | 'domestic' | 'abroad'; title: string; footer?: string }> = [
+      { key: 'base', title: '基础通用' },
+      { key: 'domestic', title: '国内升学与四六级考研' },
+      {
+        key: 'abroad',
+        title: '出国留学考试',
+        footer: '所有词库均存储在本地插件目录，启用或停用仅影响查词检索范围，不会修改已收藏的生词本与笔记。',
+      },
+    ];
 
-    const list = el('ul', 'ciyu-inset-list');
-    for (const pack of props.packs) {
-      const row = el('li', 'ciyu-inset-row');
-
-      const left = el('div', 'ciyu-inset-row-main');
-      const packIcon = el(
-        'span',
-        pack.isPrimary
-          ? 'ciyu-pack-icon ciyu-pack-icon--ok'
-          : pack.enabled
-          ? 'ciyu-pack-icon ciyu-pack-icon--accent'
-          : 'ciyu-pack-icon'
-      );
-      packIcon.appendChild(createIcon('book-open', 'sm'));
-
-      const meta = el('div', 'ciyu-inset-row-text');
-      const titleLine = el('div', 'ciyu-paper-info');
-      titleLine.appendChild(el('strong', 'ciyu-toggle-title', pack.label));
-      if (pack.isPrimary) {
-        titleLine.appendChild(el('span', 'ciyu-badge ciyu-badge--ok', '首选匹配'));
-      } else if (pack.enabled) {
-        titleLine.appendChild(el('span', 'ciyu-badge ciyu-badge--accent', '已启用'));
+    for (const sec of sections) {
+      const items = props.packs.filter((p) => (PACK_META[p.id]?.group ?? 'base') === sec.key);
+      if (items.length === 0) continue;
+      const group = el('section', 'ciyu-apple-group');
+      group.appendChild(el('h4', 'ciyu-apple-group-header', sec.title));
+      const card = el('div', 'ciyu-surface ciyu-apple-group-card');
+      for (const pack of items) {
+        card.appendChild(renderPackRow(pack));
       }
-      meta.append(
-        titleLine,
-        el(
-          'span',
-          'ciyu-toggle-desc',
-          `${pack.count.toLocaleString('zh-CN')} 个词条 · ${pack.sourceLabel ?? 'ECDICT 离线包'}`
-        )
-      );
-      left.append(packIcon, meta);
-
-      const actions = el('div', 'ciyu-toolbar-actions');
-      if (pack.enabled) {
-        if (!pack.isPrimary) {
-          const primaryBtn = el('button', 'ciyu-mini-btn ciyu-mini-btn--accent', '设为首选');
-          primaryBtn.type = 'button';
-          primaryBtn.addEventListener('click', () => callbacks.onSetPrimary?.(pack.id));
-          actions.appendChild(primaryBtn);
-        }
-        const removeBtn = el('button', 'ciyu-mini-btn ciyu-mini-btn--danger', '停用');
-        removeBtn.type = 'button';
-        removeBtn.title = '停用该离线词库（不影响已收藏的生词）';
-        removeBtn.addEventListener('click', () => callbacks.onRemovePack?.(pack.id));
-        actions.appendChild(removeBtn);
-      } else {
-        const addBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm');
-        addBtn.type = 'button';
-        addBtn.append(createIcon('plus', 'sm'), el('span', undefined, '启用'));
-        addBtn.addEventListener('click', () => callbacks.onAddPack?.(pack.id));
-        actions.appendChild(addBtn);
+      group.appendChild(card);
+      if (sec.footer) {
+        group.appendChild(el('p', 'ciyu-apple-group-footer', sec.footer));
       }
-
-      row.append(left, actions);
-      list.appendChild(row);
+      root.appendChild(group);
     }
-
-    groupCard.appendChild(list);
-    root.appendChild(groupCard);
   }
 
   render();
