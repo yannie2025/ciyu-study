@@ -2495,9 +2495,17 @@ class Cet6StudyController {
       }
     }
 
+    const hasWideLeaf = Boolean(this.plugin.app?.workspace?.getLeavesOfType?.(CET6_WIDE_VIEW)?.length);
+    const hasSidebarLeaf = Boolean(this.plugin.app?.workspace?.getLeavesOfType?.(VIEW)?.length);
+    const isWideOpen = Boolean(inWideLeaf || hasWideLeaf);
+    const companionRole = isWideOpen
+      ? (inWideLeaf ? (hasSidebarLeaf ? 'questions-only' : 'full') : 'transcript-only')
+      : 'full';
     return {
       paperId: paper.id,
       paperTitle: paper.title,
+      isWideOpen,
+      companionRole,
       notePath: this.savedFiles.get(paper.id)?.path,
       availablePapers: CET6_CATALOG.map(item => ({
         id: item.id,
@@ -2567,9 +2575,16 @@ class Cet6StudyController {
         this.docCache.delete(paperId);
         void this.openListeningSelfCheck(paperId);
       },
-      onOpenInWideWorkspace: inWideLeaf
-        ? undefined
-        : paperId => safeUi(() => this.plugin.openWideCet6Workspace('listening', paperId)),
+      onOpenInWideWorkspace: paperId => safeUi(() => {
+        const hasWide = Boolean(this.plugin.app.workspace.getLeavesOfType(CET6_WIDE_VIEW)?.length);
+        if (inWideLeaf || hasWide) {
+          return this.plugin.closeWideCet6Workspace();
+        }
+        if (this.transcriptMode === 'blind') {
+          this.transcriptMode = 'bilingual';
+        }
+        return this.plugin.openWideCet6Workspace('listening', paperId);
+      }),
       onOpenReader: paperId => void this.openPaperReader(paperId),
       onOpenLocalNote: path => safeUi(() => this.plugin.openSource(path)),
       onChangeSection: sec => {
@@ -2847,6 +2862,10 @@ class CiyuCet6WorkspaceView extends ItemView {
 
   async onClose() {
     this.destroyHandles();
+    setTimeout(() => {
+      this.plugin.cet6Controller?.notify();
+      this.plugin.refresh?.(['exams']);
+    }, 50);
   }
 
   destroyHandles() {
@@ -2867,7 +2886,12 @@ class CiyuCet6WorkspaceView extends ItemView {
 
     this.header.empty();
     const brand = this.header.createDiv({ cls: 'ciyu-brand' });
-    brand.createSpan({ cls: 'ciyu-brand-mark', text: '屿' });
+    const mark = brand.createSpan({ cls: 'ciyu-brand-mark' });
+    if (typeof CiyuUI !== 'undefined' && CiyuUI?.createBrandLogo) {
+      mark.appendChild(CiyuUI.createBrandLogo());
+    } else {
+      mark.setText('屿');
+    }
     brand.createSpan({ cls: 'ciyu-brand-title', text: '词屿 · 六级闭环与听力自查' });
 
     const nav = this.header.createDiv({ cls: 'ciyu-toolbar-actions' });
@@ -2898,92 +2922,11 @@ class CiyuCet6WorkspaceView extends ItemView {
     }
 
     const ver = this.plugin.manifest?.version || CiyuUI.CIYU_VERSION;
-    const verBtn = nav.createEl('button', {
-      cls: this.changelogOpen ? 'ciyu-version-pill ciyu-version-pill--open' : 'ciyu-version-pill',
-      attr: { type: 'button', title: '点击展开或收起更新日志', 'aria-expanded': String(Boolean(this.changelogOpen)) },
+    const verBadge = nav.createSpan({
+      cls: 'ciyu-version-pill',
+      attr: { title: `当前版本 v${ver}` },
     });
-    verBtn.createSpan({ cls: 'ciyu-version-text', text: `v${ver}` });
-    const chev = CiyuUI.createIcon('chevron-down', 'sm');
-    chev.classList.add('ciyu-version-chevron');
-    verBtn.appendChild(chev);
-    verBtn.addEventListener('click', () => {
-      this.changelogOpen = !this.changelogOpen;
-      this.render();
-    });
-
-    if (this.changelogOpen) {
-      const drawer = this.header.createDiv({ cls: 'ciyu-changelog-drawer' });
-      drawer.style.flexBasis = '100%';
-      const dHead = drawer.createDiv({ cls: 'ciyu-changelog-head' });
-      const tWrap = dHead.createDiv({ cls: 'ciyu-changelog-title-wrap' });
-      tWrap.createEl('strong', { cls: 'ciyu-changelog-title', text: '更新日志' });
-      tWrap.createSpan({ cls: 'ciyu-count-pill', text: `当前 v${ver}` });
-      const closeBtn = dHead.createEl('button', { cls: 'ciyu-icon-btn', attr: { type: 'button', title: '收起更新日志' } });
-      closeBtn.appendChild(CiyuUI.createIcon('x', 'sm'));
-      closeBtn.addEventListener('click', () => {
-        this.changelogOpen = false;
-        this.render();
-      });
-      if (CiyuUI.CIYU_CHANGELOG_FOREWORD) {
-        const fw = drawer.createDiv({ cls: 'ciyu-changelog-foreword' });
-        fw.createEl('strong', { cls: 'ciyu-changelog-foreword-title', text: CiyuUI.CIYU_CHANGELOG_FOREWORD.title });
-        for (const para of CiyuUI.CIYU_CHANGELOG_FOREWORD.paragraphs) {
-          fw.createEl('p', { cls: 'ciyu-changelog-foreword-text', text: para });
-        }
-        const wechatId = CiyuUI.CIYU_CHANGELOG_FOREWORD.wechatId;
-        if (wechatId) {
-          const row = fw.createDiv({ cls: 'ciyu-changelog-contact-row' });
-          row.createSpan({ cls: 'ciyu-changelog-foreword-text', text: '💬 交流与反馈 · 微信：' });
-          const wechatBtn = row.createEl('button', {
-            cls: 'ciyu-wechat-copy-trigger',
-            attr: { type: 'button', 'aria-label': `点击复制微信号 ${wechatId}` },
-          });
-          wechatBtn.createSpan({ cls: 'ciyu-wechat-id', text: wechatId });
-          const hintEl = wechatBtn.createSpan({ cls: 'ciyu-wechat-hint', text: '点击复制' });
-          let resetTimer = null;
-          wechatBtn.addEventListener('click', () => {
-            const done = () => {
-              wechatBtn.dataset.copied = 'true';
-              hintEl.textContent = '已复制 ✓';
-              new Notice(`已复制微信号：${wechatId}`);
-              if (resetTimer) window.clearTimeout(resetTimer);
-              resetTimer = window.setTimeout(() => {
-                delete wechatBtn.dataset.copied;
-                hintEl.textContent = '点击复制';
-              }, 1800);
-            };
-            if (navigator.clipboard?.writeText) {
-              navigator.clipboard.writeText(wechatId).then(done).catch(() => {
-                const ta = document.createElement('textarea');
-                ta.value = wechatId;
-                ta.style.position = 'fixed';
-                ta.style.opacity = '0';
-                document.body.appendChild(ta);
-                ta.select();
-                try { document.execCommand('copy'); } catch {}
-                ta.remove();
-                done();
-              });
-            } else {
-              done();
-            }
-          });
-        }
-      }
-      const list = drawer.createEl('ol', { cls: 'ciyu-changelog-list' });
-      (CiyuUI.CIYU_CHANGELOG || []).forEach((entry, idx) => {
-        const li = list.createEl('li', { cls: 'ciyu-changelog-item' });
-        const iHead = li.createDiv({ cls: 'ciyu-changelog-item-head' });
-        iHead.createSpan({
-          cls: idx === 0 ? 'ciyu-changelog-ver ciyu-changelog-ver--latest' : 'ciyu-changelog-ver',
-          text: `v${entry.version}`,
-        });
-        iHead.createSpan({ cls: 'ciyu-changelog-item-title', text: entry.title });
-        iHead.createSpan({ cls: 'ciyu-changelog-date', text: entry.date });
-        const ul = li.createEl('ul', { cls: 'ciyu-changelog-points' });
-        for (const pt of entry.highlights) ul.createEl('li', { text: pt });
-      });
-    }
+    verBadge.createSpan({ cls: 'ciyu-version-text', text: `v${ver}` });
 
     if (!this.bankHandle) {
       this.bankHandle = CiyuUI.createExamBankView(ctrl.examBankProps(), ctrl.examBankCallbacks());

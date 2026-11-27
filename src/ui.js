@@ -1242,7 +1242,7 @@ class StudyView extends ItemView {
 
   getViewType() { return VIEW; }
   getDisplayText() { return '词屿'; }
-  getIcon() { return 'languages'; }
+  getIcon() { return typeof addIcon === 'function' ? 'ciyu-island' : 'languages'; }
 
   async onOpen() {
     this.contentEl.addClass('ciyu-view-host');
@@ -1257,6 +1257,7 @@ class StudyView extends ItemView {
     this.lookupSession.onUpdate = null;
     this.handle?.destroy();
     this.handle = null;
+    setTimeout(() => this.plugin.cet6Controller?.notify(), 50);
   }
 
   show(tab, session) {

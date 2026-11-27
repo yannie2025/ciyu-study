@@ -21,9 +21,7 @@ const NAV_ITEMS: ReadonlyArray<{
   { id: 'vocabulary', label: '生词', fullLabel: '生词本', icon: 'book-open' },
   { id: 'review', label: '复习', fullLabel: '今日复习', icon: 'layers' },
   { id: 'archive', label: '归档', fullLabel: '每日归档', icon: 'calendar-days' },
-  { id: 'dictionaries', label: '词库', fullLabel: '离线词库', icon: 'book-open' },
   { id: 'exams', label: '题库', fullLabel: '六级题库', icon: 'file-text' },
-  { id: 'settings', label: '设置', fullLabel: '模型设置', icon: 'sliders' },
 ];
 
 /**
@@ -79,13 +77,17 @@ export function createSegmentedNav(
   });
 
   function activeIndex(): number {
-    const idx = NAV_ITEMS.findIndex((i) => i.id === props.activeTab);
-    return idx >= 0 ? idx : 0;
+    return NAV_ITEMS.findIndex((i) => i.id === props.activeTab);
   }
 
   function positionLensToIndex(index: number, instant = false): void {
+    if (index < 0) {
+      lens.style.opacity = '0';
+      return;
+    }
     const targetBtn = buttons[index];
     if (!targetBtn) return;
+    lens.style.opacity = '';
     const navRect = nav.getBoundingClientRect();
     const btnRect = targetBtn.getBoundingClientRect();
     if (navRect.width <= 0 || btnRect.width <= 0) {
@@ -115,7 +117,7 @@ export function createSegmentedNav(
     buttons.forEach((btn, i) => {
       const selected = i === idx;
       btn.setAttribute('aria-selected', String(selected));
-      btn.tabIndex = selected ? 0 : -1;
+      btn.tabIndex = (idx >= 0 ? selected : i === 0) ? 0 : -1;
       delete btn.dataset.dragHover;
     });
     if (reviewBadgeEl) {
@@ -168,6 +170,7 @@ export function createSegmentedNav(
   function enterDragMode(clientX: number): void {
     if (isDragging) return;
     isDragging = true;
+    lens.style.opacity = '';
     nav.dataset.dragging = 'true';
     delete nav.dataset.gliding;
     updateDragLens(clientX, 0);

@@ -1,6 +1,6 @@
 const {
   Plugin, ItemView, Modal, Notice: ObsidianNotice, PluginSettingTab, Setting, FuzzySuggestModal,
-  MarkdownView, TFile, TFolder, normalizePath, loadPdfJs, requestUrl,
+  MarkdownView, TFile, TFolder, normalizePath, loadPdfJs, requestUrl, addIcon,
 } = require('obsidian');
 const { randomUUID } = require('crypto');
 
@@ -87,7 +87,17 @@ module.exports = class CiyuPlugin extends Plugin {
         }
       }).catch(error => reportError(error));
     }));
-    this.addRibbonIcon('languages', '打开词屿', () => this.showStudy('lookup').catch(reportError));
+    if (typeof addIcon === 'function' && typeof CiyuUI !== 'undefined' && CiyuUI?.CIYU_BRAND_ICON_INNER) {
+      addIcon(
+        'ciyu-island',
+        `<g transform="scale(4.1667)" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round">${CiyuUI.CIYU_BRAND_ICON_INNER}</g>`
+      );
+    }
+    this.addRibbonIcon(
+      typeof addIcon === 'function' ? 'ciyu-island' : 'languages',
+      '打开词屿',
+      () => this.showStudy('lookup').catch(reportError)
+    );
     this.addCommand({
       id: 'lookup', name: '搜词翻译', callback: () => this.lookup({ view: this.noteView() }),
     });
@@ -240,13 +250,22 @@ module.exports = class CiyuPlugin extends Plugin {
     }
     await this.app.workspace.revealLeaf(leaf);
     if (subView === 'listening') {
+      if (ctrl.transcriptMode === 'blind') ctrl.transcriptMode = 'bilingual';
       await ctrl.openListeningSelfCheck(ctrl.activePaperId);
     } else if (subView === 'paper') {
       await ctrl.openPaperReader(ctrl.activePaperId);
     } else {
       ctrl.notify();
     }
+    this.refresh(['exams']);
     return leaf.view;
+  }
+
+  async closeWideCet6Workspace() {
+    this.app.workspace.detachLeavesOfType(CET6_WIDE_VIEW);
+    await this.showStudy('exams');
+    this.cet6Controller.notify();
+    this.refresh(['exams']);
   }
 
   async showStudy(panel, session) {

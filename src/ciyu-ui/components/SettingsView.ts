@@ -1,6 +1,6 @@
 import { CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD, CIYU_VERSION } from '../changelog';
 import { el } from '../dom';
-import { createIcon, type IconName } from '../icons';
+import { createBrandLogo, createIcon, type IconName } from '../icons';
 import { CIYU_COLOR_THEMES, DEFAULT_CUSTOM_THEME, normalizeHexColor } from '../themes';
 import { showCiyuToast } from '../toast';
 import type {
@@ -11,7 +11,7 @@ import type {
   UIComponentHandle,
 } from '../types';
 
-type AppleSettingsCategory = 'appearance' | 'speech' | 'model' | 'vault' | 'about';
+type AppleSettingsCategory = 'appearance' | 'dictionaries' | 'speech' | 'model' | 'vault' | 'about';
 type SquircleTone = 'blue' | 'cyan' | 'pink' | 'indigo' | 'purple' | 'orange' | 'green' | 'gray';
 
 function connectionMeta(status: OllamaConnectionStatus): {
@@ -324,8 +324,8 @@ export function createSettingsView(
   callbacks: SettingsViewCallbacks = {}
 ): UIComponentHandle<SettingsViewProps> {
   let props = initialProps;
-  let activeCategory: AppleSettingsCategory = 'appearance';
-  let narrowFilter: AppleSettingsCategory | 'all' = 'all';
+  let activeCategory: AppleSettingsCategory = initialProps.requestedCategory ?? 'appearance';
+  let narrowFilter: AppleSettingsCategory | 'all' = initialProps.requestedCategory ?? 'all';
   let aboutChangelogExpanded = false;
 
   const root = el('section', 'ciyu-settings-view ciyu-apple-settings');
@@ -376,10 +376,11 @@ export function createSettingsView(
       tone: SquircleTone;
     }> = [
       { id: 'appearance', label: '外观与配色', shortLabel: '外观', icon: 'sparkles', tone: 'blue' },
+      { id: 'dictionaries', label: '离线词库', shortLabel: '词库', icon: 'book-open', tone: 'green' },
       { id: 'speech', label: '朗读与发音', shortLabel: '发音', icon: 'volume-2', tone: 'pink' },
       { id: 'model', label: '本地模型', shortLabel: '模型', icon: 'sliders', tone: 'indigo' },
       { id: 'vault', label: '笔记与归档', shortLabel: '归档', icon: 'calendar-days', tone: 'orange' },
-      { id: 'about', label: '关于词屿', shortLabel: '关于', icon: 'book-open', tone: 'gray' },
+      { id: 'about', label: '关于词屿', shortLabel: '关于', icon: 'file-text', tone: 'gray' },
     ];
 
     // 1. 窄屏快捷分类过滤胶囊（< 560px 显示）
@@ -1551,7 +1552,8 @@ export function createSettingsView(
     aboutPane.appendChild(el('h3', 'ciyu-apple-pane-title', '关于词屿'));
 
     const heroRow = el('div', 'ciyu-apple-row ciyu-apple-about-hero');
-    const brandIcon = el('span', 'ciyu-apple-about-icon', '屿');
+    const brandIcon = el('span', 'ciyu-apple-about-icon');
+    brandIcon.appendChild(createBrandLogo());
     const brandInfo = el('div', 'ciyu-toggle-text');
     brandInfo.append(
       el('strong', 'ciyu-apple-about-name', '词屿 · Ciyu Study'),
@@ -1625,7 +1627,21 @@ export function createSettingsView(
 
     aboutPane.appendChild(createAppleGroup('通用信息', aboutRows));
 
-    detail.append(appearancePane, speechPane, modelPane, vaultPane, aboutPane);
+    // ==================== 分类 B：离线词库 ====================
+    const dictionariesPane = el('div', 'ciyu-apple-pane');
+    dictionariesPane.dataset.applePane = 'dictionaries';
+    dictionariesPane.appendChild(el('h3', 'ciyu-apple-pane-title', '离线词库'));
+    if (props.dictionarySlot) {
+      dictionariesPane.appendChild(props.dictionarySlot);
+    } else {
+      dictionariesPane.appendChild(
+        createAppleGroup('词库包', [
+          el('div', 'ciyu-apple-row', '暂无可管理的离线词库包。'),
+        ])
+      );
+    }
+
+    detail.append(appearancePane, dictionariesPane, speechPane, modelPane, vaultPane, aboutPane);
     layout.append(sideNav, detail);
     root.append(narrowBar, layout);
   }
@@ -1643,6 +1659,10 @@ export function createSettingsView(
       const focusLabel = root.contains(focused) ? focused?.getAttribute('aria-label') : null;
       const old = props;
       props = nextProps;
+      if (nextProps.requestedCategory && nextProps.requestedCategory !== old.requestedCategory) {
+        activeCategory = nextProps.requestedCategory;
+        narrowFilter = nextProps.requestedCategory;
+      }
       render();
       for (const input of root.querySelectorAll('input')) {
         const label = input.getAttribute('aria-label');

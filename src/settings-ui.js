@@ -106,19 +106,41 @@ class ModelSettings {
   }
 
   async setGlass(enabled) {
-    await this.plugin.commit(draft => {
-      draft.settings.liquidGlass = enabled;
-      if (enabled) draft.settings.reduceTransparency = false;
-    }, []);
+    const prevGlass = this.plugin.settings.liquidGlass;
+    const prevReduce = this.plugin.settings.reduceTransparency;
+    this.plugin.settings.liquidGlass = enabled;
+    if (enabled) this.plugin.settings.reduceTransparency = false;
     this.notify();
+    try {
+      await this.plugin.commit(draft => {
+        draft.settings.liquidGlass = enabled;
+        if (enabled) draft.settings.reduceTransparency = false;
+      }, []);
+    } catch (error) {
+      this.plugin.settings.liquidGlass = prevGlass;
+      this.plugin.settings.reduceTransparency = prevReduce;
+      this.notify();
+      throw error;
+    }
   }
 
   async setTransparency(reduced) {
-    await this.plugin.commit(draft => {
-      draft.settings.reduceTransparency = reduced;
-      if (!reduced) draft.settings.liquidGlass = true;
-    }, []);
+    const prevGlass = this.plugin.settings.liquidGlass;
+    const prevReduce = this.plugin.settings.reduceTransparency;
+    this.plugin.settings.reduceTransparency = reduced;
+    if (!reduced) this.plugin.settings.liquidGlass = true;
     this.notify();
+    try {
+      await this.plugin.commit(draft => {
+        draft.settings.reduceTransparency = reduced;
+        if (!reduced) draft.settings.liquidGlass = true;
+      }, []);
+    } catch (error) {
+      this.plugin.settings.liquidGlass = prevGlass;
+      this.plugin.settings.reduceTransparency = prevReduce;
+      this.notify();
+      throw error;
+    }
   }
 
   async setEndpoint(value) {

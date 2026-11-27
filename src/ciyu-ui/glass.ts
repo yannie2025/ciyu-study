@@ -35,6 +35,22 @@ export function applyGlassPreferences(
     (options.liquidGlass ?? !options.reducedTransparency) && !options.reducedTransparency;
   const solidMode = !glassEnabled;
 
+  const enableRefraction = glassEnabled && options.edgeRefraction;
+  const rawOpacity = typeof options.glassOpacity === 'number' && Number.isFinite(options.glassOpacity)
+    ? Math.max(10, Math.min(100, Math.round(options.glassOpacity)))
+    : 42;
+
+  const sig = JSON.stringify([
+    glassEnabled,
+    options.reducedMotion,
+    enableRefraction,
+    rawOpacity,
+    options.colorTheme ?? 'system',
+    options.customTheme ?? null,
+  ]);
+  if (root.dataset.ciyuGlassSig === sig) return;
+  root.dataset.ciyuGlassSig = sig;
+
   root.classList.toggle('ciyu-reduced-transparency', solidMode);
   root.setAttribute('data-reduced-transparency', solidMode ? 'true' : 'false');
   root.setAttribute('data-liquid-glass', glassEnabled ? 'true' : 'false');
@@ -42,26 +58,21 @@ export function applyGlassPreferences(
   root.classList.toggle('ciyu-reduced-motion', options.reducedMotion);
   root.setAttribute('data-reduced-motion', options.reducedMotion ? 'true' : 'false');
 
-  const enableRefraction = glassEnabled && options.edgeRefraction;
   root.classList.toggle('ciyu-refraction-enabled', enableRefraction);
   if (glassEnabled && root.ownerDocument) {
     ensureLiquidGlassFilter(root.ownerDocument);
   }
 
-  const rawOpacity = typeof options.glassOpacity === 'number' && Number.isFinite(options.glassOpacity)
-    ? Math.max(10, Math.min(100, Math.round(options.glassOpacity)))
-    : 42;
-
   applyColorTheme(root, options.colorTheme, options.customTheme);
 
-  // iOS 27 高通透 Liquid Glass：显著压低白底遮罩，让边栏、顶栏与所有卡片透出光感与层次
+  // iOS 27 高通透 Liquid Glass：采用轻量 GPU 模糊半径（6–12px）显著降低首次渲染与滚动开销
   if (glassEnabled) {
     const glassPct = Math.max(10, Math.min(96, Math.round(rawOpacity * 0.62)));
     const elevatedPct = Math.max(16, Math.min(96, Math.round(rawOpacity * 0.78)));
     const readingPct = Math.max(14, Math.min(96, Math.round(rawOpacity * 0.74)));
     const stickyPct = Math.min(94, Math.max(46, Math.round(rawOpacity * 0.86)));
-    const blurPx = Math.round(8 + ((100 - rawOpacity) / 90) * 6);
-    const blurHeavyPx = Math.round(11 + ((100 - rawOpacity) / 90) * 7);
+    const blurPx = Math.round(6 + ((100 - rawOpacity) / 90) * 4);
+    const blurHeavyPx = Math.round(8 + ((100 - rawOpacity) / 90) * 4);
     root.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${glassPct}%, transparent)`);
     root.style.setProperty('--ciyu-glass-bg-elevated', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${elevatedPct}%, transparent)`);
     root.style.setProperty('--ciyu-reading-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${readingPct}%, transparent)`);

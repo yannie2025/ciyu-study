@@ -99,7 +99,13 @@ export function createExamBankView(
     vaultMeta.append(vaultChip, pathSpan);
 
     const folderActions = el('div', 'ciyu-toolbar-actions');
-    const treeBtn = el('button', 'ciyu-mini-btn', showFolderTree ? '收起目录' : '目录结构');
+    const treeBtn = el(
+      'button',
+      showFolderTree
+        ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn'
+        : 'ciyu-mini-btn ciyu-toggle-stable-btn',
+      showFolderTree ? '收起目录' : '目录结构'
+    );
     treeBtn.type = 'button';
     treeBtn.setAttribute('aria-expanded', String(showFolderTree));
     treeBtn.addEventListener('click', () => {
@@ -112,7 +118,7 @@ export function createExamBankView(
     changeFolderBtn.disabled = isDownloading;
     changeFolderBtn.addEventListener('click', () => callbacks.onPickTargetFolder?.());
 
-    folderActions.append(treeBtn, changeFolderBtn);
+    folderActions.append(changeFolderBtn, treeBtn);
     vaultRow.append(vaultMeta, folderActions);
     vaultCard.appendChild(vaultRow);
 

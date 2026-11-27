@@ -1,7 +1,7 @@
-import { CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD, CIYU_VERSION } from '../changelog';
+import { CIYU_VERSION } from '../changelog';
 import { el } from '../dom';
 import { applyGlassPreferences } from '../glass';
-import { createIcon } from '../icons';
+import { createBrandLogo, createIcon } from '../icons';
 import type {
   CiyuSidebarCallbacks,
   CiyuSidebarProps,
@@ -37,8 +37,10 @@ export function createCiyuSidebar(
   const brandRow = el('div', 'ciyu-brand-row');
 
   const brand = el('div', 'ciyu-brand');
+  const brandMark = el('span', 'ciyu-brand-mark');
+  brandMark.appendChild(createBrandLogo());
   brand.append(
-    el('span', 'ciyu-brand-mark', '屿'),
+    brandMark,
     el('span', 'ciyu-brand-title', '词屿')
   );
 
@@ -53,7 +55,20 @@ export function createCiyuSidebar(
   glassToggleBtn.addEventListener('click', () => {
     const currentOn =
       props.preferences.liquidGlass && !props.preferences.reducedTransparency;
-    callbacks.onToggleLiquidGlass?.(!currentOn);
+    const nextOn = !currentOn;
+    // 0ms 乐观立即切换视觉材质，不等 iCloud 磁盘写入完成
+    props = {
+      ...props,
+      preferences: {
+        ...props.preferences,
+        liquidGlass: nextOn,
+        reducedTransparency: !nextOn,
+      },
+    };
+    applyGlassPreferences(root, props.preferences);
+    glassToggleBtn.setAttribute('aria-pressed', String(nextOn));
+    glassToggleText.textContent = nextOn ? '玻璃开' : '玻璃关';
+    callbacks.onToggleLiquidGlass?.(nextOn);
   });
 
   const metaPill = el('div', 'ciyu-brand-meta');
@@ -61,90 +76,25 @@ export function createCiyuSidebar(
   const modelText = el('span');
   metaPill.append(statusDot, modelText);
 
-  let changelogOpen = false;
-  const versionBtn = el('button', 'ciyu-version-pill');
-  versionBtn.type = 'button';
-  versionBtn.title = '点击展开或收起更新日志';
-  versionBtn.setAttribute('aria-expanded', 'false');
+  const versionBadge = el('span', 'ciyu-version-pill');
+  versionBadge.title = `当前版本 v${props.appVersion || CIYU_VERSION}（完整更新日志请见「设置 → 关于词屿」）`;
   const versionLabel = el('span', 'ciyu-version-text', `v${props.appVersion || CIYU_VERSION}`);
-  const versionChevron = createIcon('chevron-down', 'sm');
-  versionChevron.classList.add('ciyu-version-chevron');
-  versionBtn.append(versionLabel, versionChevron);
+  versionBadge.appendChild(versionLabel);
 
-  const changelogDrawer = el('section', 'ciyu-changelog-drawer');
-  changelogDrawer.hidden = true;
+  let lastStudyTab: CiyuSidebarProps['activeTab'] =
+    props.activeTab === 'settings' || props.activeTab === 'dictionaries' ? 'lookup' : props.activeTab;
 
-  function renderChangelog(): void {
-    const ver = props.appVersion || CIYU_VERSION;
-    const entries = props.changelog?.length ? props.changelog : CIYU_CHANGELOG;
-    versionLabel.textContent = `v${ver}`;
-    versionBtn.setAttribute('aria-expanded', String(changelogOpen));
-    versionBtn.classList.toggle('ciyu-version-pill--open', changelogOpen);
-    changelogDrawer.hidden = !changelogOpen;
-    if (!changelogOpen) return;
-
-    changelogDrawer.innerHTML = '';
-    const drawerHead = el('div', 'ciyu-changelog-head');
-    const titleWrap = el('div', 'ciyu-changelog-title-wrap');
-    titleWrap.append(
-      el('strong', 'ciyu-changelog-title', '更新日志'),
-      el('span', 'ciyu-count-pill', `当前 v${ver}`)
-    );
-    const closeBtn = el('button', 'ciyu-icon-btn');
-    closeBtn.type = 'button';
-    closeBtn.title = '收起更新日志';
-    closeBtn.appendChild(createIcon('x', 'sm'));
-    closeBtn.addEventListener('click', () => {
-      changelogOpen = false;
-      renderChangelog();
-    });
-    drawerHead.append(titleWrap, closeBtn);
-    changelogDrawer.appendChild(drawerHead);
-
-    const forewordBox = el('div', 'ciyu-changelog-foreword');
-    forewordBox.appendChild(el('strong', 'ciyu-changelog-foreword-title', CIYU_CHANGELOG_FOREWORD.title));
-    for (const para of CIYU_CHANGELOG_FOREWORD.paragraphs) {
-      forewordBox.appendChild(el('p', 'ciyu-changelog-foreword-text', para));
-    }
-    const openSourceRow = el('div', 'ciyu-changelog-contact-row');
-    const githubLink = el('a', 'ciyu-badge ciyu-badge--neutral', 'GitHub');
-    githubLink.href = 'https://github.com/yannie2025/ciyu-study';
-    githubLink.target = '_blank';
-    githubLink.rel = 'noopener noreferrer';
-    openSourceRow.append(el('span', 'ciyu-changelog-foreword-text', '开源项目'), githubLink);
-    forewordBox.appendChild(openSourceRow);
-    changelogDrawer.appendChild(forewordBox);
-
-    const list = el('ol', 'ciyu-changelog-list');
-    entries.forEach((entry, idx) => {
-      const li = el('li', 'ciyu-changelog-item');
-      const itemHead = el('div', 'ciyu-changelog-item-head');
-      const verBadge = el(
-        'span',
-        idx === 0 ? 'ciyu-changelog-ver ciyu-changelog-ver--latest' : 'ciyu-changelog-ver',
-        `v${entry.version}`
-      );
-      itemHead.append(
-        verBadge,
-        el('span', 'ciyu-changelog-item-title', entry.title),
-        el('span', 'ciyu-changelog-date', entry.date)
-      );
-      const ul = el('ul', 'ciyu-changelog-points');
-      for (const point of entry.highlights) {
-        ul.appendChild(el('li', undefined, point));
-      }
-      li.append(itemHead, ul);
-      list.appendChild(li);
-    });
-    changelogDrawer.appendChild(list);
-  }
-
-  versionBtn.addEventListener('click', () => {
-    changelogOpen = !changelogOpen;
-    renderChangelog();
+  const settingsTopBtn = el('button', 'ciyu-settings-top-btn');
+  settingsTopBtn.type = 'button';
+  settingsTopBtn.title = '设置与离线词库';
+  settingsTopBtn.setAttribute('aria-label', '设置');
+  settingsTopBtn.appendChild(createIcon('sliders', 'sm'));
+  settingsTopBtn.addEventListener('click', () => {
+    const inSettings = props.activeTab === 'settings' || props.activeTab === 'dictionaries';
+    callbacks.onTabChange?.(inSettings ? lastStudyTab : 'settings');
   });
 
-  rightTools.append(glassToggleBtn, metaPill, versionBtn);
+  rightTools.append(glassToggleBtn, metaPill, versionBadge, settingsTopBtn);
   brandRow.append(brand, rightTools);
 
   const navHandle = createSegmentedNav(
@@ -157,7 +107,7 @@ export function createCiyuSidebar(
     }
   );
 
-  header.append(brandRow, changelogDrawer, navHandle.element);
+  header.append(brandRow, navHandle.element);
 
   const body = el('main', 'ciyu-sidebar-body');
 
@@ -165,9 +115,16 @@ export function createCiyuSidebar(
   const vocabHandle = createVocabularyView(props.vocabulary, callbacks.vocabulary);
   const reviewHandle = createReviewView(props.review, callbacks.review);
   const archiveHandle = createArchiveView(props.archive, callbacks.archive);
-  const settingsHandle = createSettingsView(props.settings, callbacks.settings);
-
   const dictionaryPanel = el('section', 'ciyu-dictionaries-view');
+  const settingsHandle = createSettingsView(
+    {
+      ...props.settings,
+      dictionarySlot: dictionaryPanel,
+      requestedCategory: props.activeTab === 'dictionaries' ? 'dictionaries' : undefined,
+    },
+    callbacks.settings
+  );
+
   const examsPanel = el('section', 'ciyu-exams-view');
 
   // 兼容旧版 v0.3.5 未传 examBank 时的回退按钮卡片
@@ -206,6 +163,10 @@ export function createCiyuSidebar(
   let examWorkspaceHandle: UIComponentHandle<NonNullable<CiyuSidebarProps['examWorkspace']>> | null = null;
   let listeningHandle: UIComponentHandle<NonNullable<CiyuSidebarProps['listening']>> | null = null;
   let mistakesHandle: UIComponentHandle<NonNullable<CiyuSidebarProps['mistakes']>> | null = null;
+  let lastExamSubNavSig = '';
+  let lastRenderedDictKey: string | undefined;
+  let lastRenderedNotesKey: string | undefined;
+  const dirtyPanels = new Set<string>();
 
   examsPanel.append(examSubNav, legacyExamsCard);
   const archivePanel = el('section', 'ciyu-notes-view');
@@ -216,7 +177,6 @@ export function createCiyuSidebar(
     vocabulary: vocabHandle.element,
     review: reviewHandle.element,
     archive: archivePanel,
-    dictionaries: dictionaryPanel,
     exams: examsPanel,
     settings: settingsHandle.element,
   } as const;
@@ -239,9 +199,8 @@ export function createCiyuSidebar(
       'aria-label',
       glassOn ? '关闭 Liquid Glass 效果' : '开启 Liquid Glass 效果'
     );
-    glassToggleText.textContent = glassOn ? '玻璃开' : '实色';
+    glassToggleText.textContent = glassOn ? '玻璃开' : '玻璃关';
     versionLabel.textContent = `v${props.appVersion || CIYU_VERSION}`;
-    if (changelogOpen) renderChangelog();
 
     statusDot.className =
       props.connectionStatus === 'connected'
@@ -257,149 +216,204 @@ export function createCiyuSidebar(
         ? '连接检测中…'
         : 'Ollama 未连接';
 
+    const inSettings = props.activeTab === 'settings' || props.activeTab === 'dictionaries';
+    if (!inSettings) lastStudyTab = props.activeTab;
+    settingsTopBtn.classList.toggle('ciyu-settings-top-btn--active', inSettings);
+    settingsTopBtn.setAttribute('aria-pressed', String(inSettings));
+
     if (!previous || previous.activeTab !== props.activeTab || previous.dueTodayCount !== props.dueTodayCount) {
       const navFocused = navHandle.element.contains(root.ownerDocument.activeElement);
       navHandle.update({ activeTab: props.activeTab, dueTodayCount: props.dueTodayCount });
       if (navFocused) navHandle.element.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
+      const visiblePanelId = inSettings ? 'settings' : props.activeTab;
       for (const tabId of Object.keys(panelMap) as Array<keyof typeof panelMap>) {
-        panelMap[tabId].hidden = tabId !== props.activeTab;
+        panelMap[tabId].hidden = tabId !== visiblePanelId;
       }
     }
 
     const differs = (a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b);
-    const examsAvailable = Boolean(props.examsAvailable);
-    openExams.hidden = !examsAvailable;
-    openLastExam.hidden = !props.lastExamAvailable;
-    localIndex.hidden = !props.cet6IndexAvailable;
-    examsDescription.textContent = '下载 2024 年 6 月至 2026 年 6 月的 15 套六级真题，并在目标文件夹生成索引。';
+    const visiblePanelId = inSettings ? 'settings' : props.activeTab;
 
-    const subView: ExamSubViewId = props.examSubView ?? 'bank';
-    const hasRichExams = Boolean(
-      props.examBank || props.examWorkspace || props.listening || props.mistakes
-    );
-    legacyExamsCard.hidden = hasRichExams;
-    examSubNav.hidden = !hasRichExams;
+    // 仅在当前处于「题库」页签时按需渲染/更新当前子视图，避免后台空转重建 DOM
+    if (visiblePanelId === 'exams') {
+      const examsAvailable = Boolean(props.examsAvailable);
+      openExams.hidden = !examsAvailable;
+      openLastExam.hidden = !props.lastExamAvailable;
+      localIndex.hidden = !props.cet6IndexAvailable;
+      examsDescription.textContent = '下载 2024 年 6 月至 2026 年 6 月的 15 套六级真题，并在目标文件夹生成索引。';
 
-    if (hasRichExams) {
-      examSubNav.replaceChildren();
-      const mistakeTotal = props.mistakes?.items.length ?? props.examBank?.mistakeCount ?? 0;
-      const items: Array<{ id: ExamSubViewId; label: string }> = [
-        { id: 'bank', label: '题库选卷' },
-        { id: 'index', label: '真题索引' },
-        { id: 'paper', label: '试卷做题' },
-        { id: 'listening', label: '听力自查' },
-        {
-          id: 'mistakes',
-          label: mistakeTotal > 0 ? `错题本 (${mistakeTotal})` : '错题本',
-        },
-      ];
-      const track = el('div', 'ciyu-exam-subnav-track');
-      const subBtns: HTMLButtonElement[] = [];
-      let activeSubIdx = 0;
-      items.forEach((it, idx) => {
-        const isCurrent = subView === it.id;
-        if (isCurrent) activeSubIdx = idx;
-        const btn = el(
-          'button',
-          isCurrent ? 'ciyu-exam-subnav-btn ciyu-exam-subnav-btn--active' : 'ciyu-exam-subnav-btn',
-          it.label
-        );
-        btn.type = 'button';
-        btn.setAttribute('aria-current', String(isCurrent));
-        subBtns.push(btn);
-        track.appendChild(btn);
-      });
-      attachLiquidLens({
-        container: track,
-        buttons: subBtns,
-        activeIndex: activeSubIdx,
-        cacheKey: 'cet6-exam-subnav',
-        onSelect: (idx) => {
-          const picked = items[idx];
-          if (picked) callbacks.onExamSubViewChange?.(picked.id);
-        },
-      });
-      examSubNav.appendChild(track);
-    }
+      const subView: ExamSubViewId = props.examSubView ?? 'bank';
+      const hasRichExams = Boolean(
+        props.examBank || props.examWorkspace || props.listening || props.mistakes
+      );
+      legacyExamsCard.hidden = hasRichExams;
+      examSubNav.hidden = !hasRichExams;
 
-    if (props.examBank) {
-      if (!examBankHandle) {
-        examBankHandle = createExamBankView(props.examBank, {
-          onOpenBatchDownloadModal:
-            callbacks.examBank?.onOpenBatchDownloadModal ?? callbacks.onDownloadCet6,
-          onOpenCet6Index:
-            callbacks.examBank?.onOpenCet6Index ?? callbacks.onOpenCet6Index,
-          onOpenImportModal:
-            callbacks.examBank?.onOpenImportModal ?? callbacks.onImportExams,
-          onOpenLastImported:
-            callbacks.examBank?.onOpenLastImported ?? callbacks.onOpenLastExam,
-          ...callbacks.examBank,
-        });
-        examsPanel.appendChild(examBankHandle.element);
-      } else {
-        examBankHandle.update(props.examBank);
+      if (hasRichExams) {
+        const mistakeTotal = props.mistakes?.items.length ?? props.examBank?.mistakeCount ?? 0;
+        const subNavSig = `${subView}::${mistakeTotal}`;
+        if (subNavSig !== lastExamSubNavSig) {
+          lastExamSubNavSig = subNavSig;
+          examSubNav.replaceChildren();
+          const items: Array<{ id: ExamSubViewId; label: string }> = [
+            { id: 'bank', label: '题库选卷' },
+            { id: 'index', label: '真题索引' },
+            { id: 'paper', label: '试卷做题' },
+            { id: 'listening', label: '听力自查' },
+            {
+              id: 'mistakes',
+              label: mistakeTotal > 0 ? `错题本 (${mistakeTotal})` : '错题本',
+            },
+          ];
+          const track = el('div', 'ciyu-exam-subnav-track');
+          const subBtns: HTMLButtonElement[] = [];
+          let activeSubIdx = 0;
+          items.forEach((it, idx) => {
+            const isCurrent = subView === it.id;
+            if (isCurrent) activeSubIdx = idx;
+            const btn = el(
+              'button',
+              isCurrent ? 'ciyu-exam-subnav-btn ciyu-exam-subnav-btn--active' : 'ciyu-exam-subnav-btn',
+              it.label
+            );
+            btn.type = 'button';
+            btn.setAttribute('aria-current', String(isCurrent));
+            subBtns.push(btn);
+            track.appendChild(btn);
+          });
+          attachLiquidLens({
+            container: track,
+            buttons: subBtns,
+            activeIndex: activeSubIdx,
+            cacheKey: 'cet6-exam-subnav',
+            onSelect: (idx) => {
+              const picked = items[idx];
+              if (picked) callbacks.onExamSubViewChange?.(picked.id);
+            },
+          });
+          examSubNav.appendChild(track);
+        }
       }
-      examBankHandle.element.hidden = subView !== 'bank';
-    } else if (examBankHandle) {
-      examBankHandle.element.hidden = true;
+
+      if (subView === 'bank' && props.examBank) {
+        if (!examBankHandle) {
+          examBankHandle = createExamBankView(props.examBank, {
+            onOpenBatchDownloadModal:
+              callbacks.examBank?.onOpenBatchDownloadModal ?? callbacks.onDownloadCet6,
+            onOpenCet6Index:
+              callbacks.examBank?.onOpenCet6Index ?? callbacks.onOpenCet6Index,
+            onOpenImportModal:
+              callbacks.examBank?.onOpenImportModal ?? callbacks.onImportExams,
+            onOpenLastImported:
+              callbacks.examBank?.onOpenLastImported ?? callbacks.onOpenLastExam,
+            ...callbacks.examBank,
+          });
+          examsPanel.appendChild(examBankHandle.element);
+        } else {
+          examBankHandle.update(props.examBank);
+        }
+      }
+      if (examBankHandle) examBankHandle.element.hidden = subView !== 'bank';
+
+      if ((subView === 'index' || subView === 'paper') && props.examWorkspace) {
+        const wsProps = {
+          ...props.examWorkspace,
+          mode: subView === 'paper' ? ('paper' as const) : ('index' as const),
+        };
+        if (!examWorkspaceHandle) {
+          examWorkspaceHandle = createExamWorkspaceView(wsProps, callbacks.examWorkspace);
+          examsPanel.appendChild(examWorkspaceHandle.element);
+        } else {
+          examWorkspaceHandle.update(wsProps);
+        }
+      }
+      if (examWorkspaceHandle) examWorkspaceHandle.element.hidden = subView !== 'index' && subView !== 'paper';
+
+      if (subView === 'listening' && props.listening) {
+        if (!listeningHandle) {
+          listeningHandle = createListeningIntensiveView(
+            props.listening,
+            callbacks.listening
+          );
+          examsPanel.appendChild(listeningHandle.element);
+        } else {
+          listeningHandle.update(props.listening);
+        }
+      }
+      if (listeningHandle) listeningHandle.element.hidden = subView !== 'listening';
+
+      if (subView === 'mistakes' && props.mistakes) {
+        if (!mistakesHandle) {
+          mistakesHandle = createMistakeBookView(props.mistakes, callbacks.mistakes);
+          examsPanel.appendChild(mistakesHandle.element);
+        } else {
+          mistakesHandle.update(props.mistakes);
+        }
+      }
+      if (mistakesHandle) mistakesHandle.element.hidden = subView !== 'mistakes';
     }
 
-    if (props.examWorkspace) {
-      const wsProps = {
-        ...props.examWorkspace,
-        mode: subView === 'paper' ? ('paper' as const) : ('index' as const),
-      };
-      if (!examWorkspaceHandle) {
-        examWorkspaceHandle = createExamWorkspaceView(wsProps, callbacks.examWorkspace);
-        examsPanel.appendChild(examWorkspaceHandle.element);
-      } else {
-        examWorkspaceHandle.update(wsProps);
-      }
-      examWorkspaceHandle.element.hidden = subView !== 'index' && subView !== 'paper';
-    } else if (examWorkspaceHandle) {
-      examWorkspaceHandle.element.hidden = true;
-    }
-
-    if (props.listening) {
-      if (!listeningHandle) {
-        listeningHandle = createListeningIntensiveView(
-          props.listening,
-          callbacks.listening
-        );
-        examsPanel.appendChild(listeningHandle.element);
-      } else {
-        listeningHandle.update(props.listening);
-      }
-      listeningHandle.element.hidden = subView !== 'listening';
-    } else if (listeningHandle) {
-      listeningHandle.element.hidden = true;
-    }
-
-    if (props.mistakes) {
-      if (!mistakesHandle) {
-        mistakesHandle = createMistakeBookView(props.mistakes, callbacks.mistakes);
-        examsPanel.appendChild(mistakesHandle.element);
-      } else {
-        mistakesHandle.update(props.mistakes);
-      }
-      mistakesHandle.element.hidden = subView !== 'mistakes';
-    } else if (mistakesHandle) {
-      mistakesHandle.element.hidden = true;
-    }
-    if (!previous || previous.dictionaryKey !== props.dictionaryKey) {
+    if (visiblePanelId === 'settings' && lastRenderedDictKey !== props.dictionaryKey) {
+      lastRenderedDictKey = props.dictionaryKey;
       dictionaryPanel.replaceChildren();
       callbacks.renderDictionaries?.(dictionaryPanel);
     }
-    if (!previous || previous.notesKey !== props.notesKey) {
+    if (visiblePanelId === 'archive' && lastRenderedNotesKey !== props.notesKey) {
+      lastRenderedNotesKey = props.notesKey;
       notesHost.replaceChildren();
       callbacks.renderNotes?.(notesHost);
     }
+
     if (!previous) return;
-    if (differs(previous.lookup, props.lookup)) lookupHandle.update(props.lookup);
-    if (differs(previous.vocabulary, props.vocabulary)) vocabHandle.update(props.vocabulary);
-    if (differs(previous.review, props.review)) reviewHandle.update(props.review);
-    if (differs(previous.archive, props.archive)) archiveHandle.update(props.archive);
-    if (differs(previous.settings, props.settings)) settingsHandle.update(props.settings);
+
+    // 仅立即刷新当前可见页签；隐藏页签先标脏，切到该页签时再刷新
+    if (visiblePanelId === 'lookup') {
+      if (dirtyPanels.delete('lookup') || differs(previous.lookup, props.lookup)) {
+        lookupHandle.update(props.lookup);
+      }
+    } else if (previous.lookup !== props.lookup) {
+      dirtyPanels.add('lookup');
+    }
+
+    if (visiblePanelId === 'vocabulary') {
+      if (dirtyPanels.delete('vocabulary') || differs(previous.vocabulary, props.vocabulary)) {
+        vocabHandle.update(props.vocabulary);
+      }
+    } else if (previous.vocabulary !== props.vocabulary) {
+      dirtyPanels.add('vocabulary');
+    }
+
+    if (visiblePanelId === 'review') {
+      if (dirtyPanels.delete('review') || differs(previous.review, props.review)) {
+        reviewHandle.update(props.review);
+      }
+    } else if (previous.review !== props.review) {
+      dirtyPanels.add('review');
+    }
+
+    if (visiblePanelId === 'archive') {
+      if (dirtyPanels.delete('archive') || differs(previous.archive, props.archive)) {
+        archiveHandle.update(props.archive);
+      }
+    } else if (previous.archive !== props.archive) {
+      dirtyPanels.add('archive');
+    }
+
+    if (visiblePanelId === 'settings') {
+      if (
+        dirtyPanels.delete('settings') ||
+        previous.activeTab !== props.activeTab ||
+        differs(previous.settings, props.settings)
+      ) {
+        settingsHandle.update({
+          ...props.settings,
+          dictionarySlot: dictionaryPanel,
+          requestedCategory: props.activeTab === 'dictionaries' ? 'dictionaries' : undefined,
+        });
+      }
+    } else if (previous.settings !== props.settings) {
+      dirtyPanels.add('settings');
+    }
   }
 
   sync();

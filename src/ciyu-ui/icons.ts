@@ -152,6 +152,21 @@ const ICON_PATHS: Record<IconName, string> = {
     '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
 };
 
+/**
+ * 「词屿 · Word Island」专属几何矢量图标（书卷岛屿 + 海浪 + 星芒）
+ * viewBox="0 0 24 24"，在 16px Ribbon 栏与 40px 品牌大图标下均保持锐利清晰。
+ */
+export const CIYU_BRAND_ICON_INNER =
+  '<path d="M4 15.5c2.4-1.2 4.8-1.2 8 0 3.2-1.2 5.6-1.2 8 0"/><path d="M5.5 14.5V9.2c0-.9.7-1.6 1.6-1.7 1.7-.2 3.3.3 4.9 1.3 1.6-1 3.2-1.5 4.9-1.3.9.1 1.6.8 1.6 1.7v5.3"/><path d="M12 8.8v6.5"/><path d="M3.5 18.8c2.2 1.1 4.4 1.1 6.6 0 1.2-.6 2.6-.6 3.8 0 2.2 1.1 4.4 1.1 6.6 0"/><path d="M12 2.6l.65 1.55 1.55.65-1.55.65L12 7l-.65-1.55L9.8 4.8l1.55-.65Z" fill="currentColor" stroke="none"/>';
+
+export function createBrandLogo(): HTMLSpanElement {
+  const wrapper = document.createElement('span');
+  wrapper.className = 'ciyu-brand-svg';
+  wrapper.setAttribute('aria-hidden', 'true');
+  wrapper.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" focusable="false">${CIYU_BRAND_ICON_INNER}</svg>`;
+  return wrapper;
+}
+
 export function createIcon(name: IconName, size: 'sm' | 'md' | 'lg' = 'md'): HTMLSpanElement {
   const wrapper = document.createElement('span');
   wrapper.className =

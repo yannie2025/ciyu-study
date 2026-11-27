@@ -47,14 +47,16 @@ export function createStudyNotesManagerView(
 
     const newBtn = el(
       'button',
-      creating ? 'ciyu-mini-btn' : 'ciyu-btn ciyu-btn--primary ciyu-btn--sm'
+      creating
+        ? 'ciyu-btn ciyu-btn--glass ciyu-btn--sm ciyu-toggle-stable-btn--md'
+        : 'ciyu-btn ciyu-btn--primary ciyu-btn--sm ciyu-toggle-stable-btn--md'
     );
     newBtn.type = 'button';
-    if (creating) {
-      newBtn.textContent = '收起';
-    } else {
-      newBtn.append(createIcon('file-plus', 'sm'), el('span', undefined, '新建笔记'));
-    }
+    newBtn.setAttribute('aria-expanded', String(creating));
+    newBtn.append(
+      createIcon(creating ? 'x' : 'file-plus', 'sm'),
+      el('span', undefined, creating ? '收起新建' : '新建笔记')
+    );
     newBtn.addEventListener('click', () => {
       creating = !creating;
       createError = '';

@@ -124,10 +124,8 @@
     var(--ciyu-specular-rim),
     var(--ciyu-specular-bottom),
     var(--ciyu-shadow-sm);
-  backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
-  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
+  backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate));
+  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate));
   transition:
     background var(--ciyu-dur-fast) var(--ciyu-ease-standard),
     border-color var(--ciyu-dur-fast) var(--ciyu-ease-standard),
@@ -135,14 +133,7 @@
     transform var(--ciyu-dur-fast) var(--ciyu-ease-spring);
 }
 
-/* 液态玻璃边缘棱镜高光环（纯 CSS 零坏图，自适应任意尺寸） */
-.ciyu-ui.ciyu-refraction-enabled .ciyu-glass-refract {
-  backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
-  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
-}
-
+/* 液态玻璃边缘高光环（零 mask-composite 离屏缓冲，单层轻量合成） */
 .ciyu-ui.ciyu-refraction-enabled .ciyu-glass-refract::before {
   content: "";
   position: absolute;
@@ -150,37 +141,16 @@
   border-radius: inherit;
   pointer-events: none;
   opacity: var(--ciyu-refraction-opacity);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.18) 38%,
-      rgba(255, 255, 255, 0.08) 68%,
-      rgba(255, 255, 255, 0.48) 100%
-    );
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  padding: 1.5px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.88);
   z-index: 2;
 }
 
 .theme-dark .ciyu-ui.ciyu-refraction-enabled .ciyu-glass-refract::before,
 .ciyu-ui.theme-dark.ciyu-refraction-enabled .ciyu-glass-refract::before,
 .ciyu-ui[data-theme="dark"].ciyu-refraction-enabled .ciyu-glass-refract::before {
-  background:
-    linear-gradient(
-      138deg,
-      rgba(255, 255, 255, 0.3) 0%,
-      rgba(255, 255, 255, 0.08) 28%,
-      rgba(10, 132, 255, 0.08) 68%,
-      rgba(255, 255, 255, 0.2) 100%
-    );
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
 }
 
 /* 稳定高对比正文阅读层（通透高光卡片；静态卡片不叠加多余 backdrop-filter 以保证 120fps 流畅滚动） */
@@ -318,20 +288,37 @@
 }
 
 .ciyu-ui .ciyu-brand-mark {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  width: 24px;
+  height: 24px;
+  border-radius: 7.5px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(150deg, var(--ciyu-accent), var(--ciyu-accent-hover));
-  color: var(--ciyu-on-accent);
-  font-size: 12px;
-  font-weight: 600;
+  background: linear-gradient(145deg, #3294ff 0%, var(--ciyu-accent) 62%, #5856d6 100%);
+  color: #ffffff;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 2px 6px rgba(56, 97, 136, 0.25);
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 2px 6px color-mix(in srgb, var(--ciyu-accent) 30%, transparent);
   flex-shrink: 0;
+}
+
+.ciyu-ui .ciyu-brand-svg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+.ciyu-ui .ciyu-brand-mark .ciyu-brand-svg svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ciyu-ui .ciyu-apple-about-icon .ciyu-brand-svg svg {
+  width: 24px;
+  height: 24px;
 }
 
 .ciyu-ui .ciyu-brand-title {
@@ -436,7 +423,7 @@
 .ciyu-ui .ciyu-segmented {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
   gap: 2px;
   padding: 3px;
@@ -2307,22 +2294,38 @@
   color: var(--ciyu-text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  user-select: none;
 }
 
-.ciyu-ui .ciyu-version-pill:hover,
-.ciyu-ui .ciyu-version-pill--open {
+.ciyu-ui .ciyu-glass-quick-toggle {
+  min-width: 66px;
+  justify-content: center;
+}
+
+.ciyu-ui .ciyu-settings-top-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+  background: var(--ciyu-reading-subtle);
+  border: 1px solid var(--ciyu-border-subtle);
+  color: var(--ciyu-text-secondary);
+  flex-shrink: 0;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease;
+}
+
+.ciyu-ui .ciyu-settings-top-btn:hover,
+.ciyu-ui .ciyu-settings-top-btn--active {
   background: var(--ciyu-accent-soft);
   border-color: var(--ciyu-accent-border);
   color: var(--ciyu-accent-text);
 }
 
-.ciyu-ui .ciyu-version-chevron {
-  transition: transform 160ms ease;
-}
-
-.ciyu-ui .ciyu-version-pill--open .ciyu-version-chevron {
-  transform: rotate(180deg);
+.ciyu-ui .ciyu-settings-top-btn:active {
+  transform: scale(0.95);
 }
 
 .ciyu-ui .ciyu-changelog-drawer {
@@ -3026,17 +3029,20 @@
   min-width: 0;
 }
 
-/* 窄屏按顶部胶囊过滤分组 */
-.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="appearance"] > [data-apple-pane]:not([data-apple-pane="appearance"]),
-.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="speech"] > [data-apple-pane]:not([data-apple-pane="speech"]),
-.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="model"] > [data-apple-pane]:not([data-apple-pane="model"]),
-.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="vault"] > [data-apple-pane]:not([data-apple-pane="vault"]),
-.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="about"] > [data-apple-pane]:not([data-apple-pane="about"]) {
-  display: none;
+/* 窄屏（< 560px）按顶部胶囊过滤分组；使用严格互补范围语法避免 Retina 小数像素落空 */
+@container ciyu-settings (width < 560px) {
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="appearance"] > [data-apple-pane]:not([data-apple-pane="appearance"]),
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="dictionaries"] > [data-apple-pane]:not([data-apple-pane="dictionaries"]),
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="speech"] > [data-apple-pane]:not([data-apple-pane="speech"]),
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="model"] > [data-apple-pane]:not([data-apple-pane="model"]),
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="vault"] > [data-apple-pane]:not([data-apple-pane="vault"]),
+  .ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="about"] > [data-apple-pane]:not([data-apple-pane="about"]) {
+    display: none;
+  }
 }
 
 /* 宽屏（>= 560px）自动切换为 macOS 系统设置双栏 */
-@container ciyu-settings (min-width: 560px) {
+@container ciyu-settings (width >= 560px) {
   .ciyu-ui .ciyu-apple-narrow-pills {
     display: none;
   }
@@ -3087,6 +3093,7 @@
   }
 
   .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="appearance"] > [data-apple-pane="appearance"],
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="dictionaries"] > [data-apple-pane="dictionaries"],
   .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="speech"] > [data-apple-pane="speech"],
   .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="model"] > [data-apple-pane="model"],
   .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="vault"] > [data-apple-pane="vault"],

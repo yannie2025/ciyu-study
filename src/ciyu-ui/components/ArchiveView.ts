@@ -113,21 +113,16 @@ export function createArchiveView(
           if (callbacks.onUpdateEntryMeta) {
             const editMetaBtn = el(
               'button',
-              isEditing ? 'ciyu-mini-btn ciyu-mini-btn--accent' : 'ciyu-mini-btn'
+              isEditing
+                ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn--md'
+                : 'ciyu-mini-btn ciyu-toggle-stable-btn--md'
             );
             editMetaBtn.type = 'button';
             editMetaBtn.title = '自主添加或编辑该单词的词根词缀与派生词';
+            editMetaBtn.setAttribute('aria-expanded', String(isEditing));
             editMetaBtn.append(
               createIcon(isEditing ? 'x' : 'plus', 'sm'),
-              el(
-                'span',
-                undefined,
-                isEditing
-                  ? '收起'
-                  : roots.length || derivatives.length
-                  ? '编辑词根/派生'
-                  : '词根/派生'
-              )
+              el('span', undefined, isEditing ? '收起词根' : '词根/派生')
             );
             editMetaBtn.addEventListener('click', () => {
               editingEntryId = isEditing ? null : entry.id;

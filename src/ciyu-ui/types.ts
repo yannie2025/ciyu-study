@@ -441,6 +441,14 @@ export interface DiscoveredModel {
 export type SpeechEngineMode = 'human' | 'system';
 export type SpeechAccent = 'us' | 'uk';
 
+export type SettingsCategoryId =
+  | 'appearance'
+  | 'dictionaries'
+  | 'speech'
+  | 'model'
+  | 'vault'
+  | 'about';
+
 export interface SettingsViewProps {
   nativeDictionaries?: boolean;
   discovery?: { status: 'idle' | 'finding' | 'ready'; models: DiscoveredModel[] };
@@ -458,6 +466,8 @@ export interface SettingsViewProps {
   deletingModelId?: string;
   translationTest: TranslationTestState;
   preferences: CiyuUiPreferences;
+  requestedCategory?: SettingsCategoryId;
+  dictionarySlot?: HTMLElement;
 }
 
 export interface SettingsViewCallbacks {
@@ -826,6 +836,9 @@ export interface ListeningSelfCheckState {
 export interface ListeningIntensiveProps {
   paperId: string;
   paperTitle: string;
+  isWideOpen?: boolean;
+  /** 双屏协作角色：full（默认完整单视图）、questions-only（左侧宽屏专注听音做题）、transcript-only（右侧边栏纯原文与翻译伴读） */
+  companionRole?: 'full' | 'questions-only' | 'transcript-only';
   notePath?: string;
   /** 可直接切换进入听力自查的历年套卷列表 */
   availablePapers?: ListeningPaperChoice[];

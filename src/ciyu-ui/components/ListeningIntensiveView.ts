@@ -1,6 +1,7 @@
 import { el } from '../dom';
 import { createIcon } from '../icons';
 import { attachLiquidLens } from './LiquidSegmented';
+import { createListeningScoreCalculator } from './ListeningScoreCalculator';
 import type {
   ExamChoiceQuestion,
   ListeningIntensiveCallbacks,
@@ -120,6 +121,8 @@ export function createListeningIntensiveView(
     return JSON.stringify({
       paperId: p.paperId,
       paperTitle: p.paperTitle,
+      isWideOpen: Boolean(p.isWideOpen),
+      companionRole: p.companionRole ?? 'full',
       loadingPaper: p.loadingPaper,
       loadError: p.loadError,
       activeSection: p.activeSection,
@@ -213,6 +216,9 @@ export function createListeningIntensiveView(
     }
   }
 
+  let scoreCalcOpen = false;
+  const scoreCalcWrongs = new Set<number>();
+
   function patchPlaybackInPlace(): void {
     const activeGroup = resolveActiveGroup(props);
     const clip = computeClipWindow(props, activeGroup);
@@ -241,8 +247,8 @@ export function createListeningIntensiveView(
     if (hideZhBtnEl) {
       hideZhBtnEl.textContent = props.hideChineseInBilingual ? '显示中文译文' : '单独隐藏中文';
       hideZhBtnEl.className = props.hideChineseInBilingual
-        ? 'ciyu-mini-btn ciyu-mini-btn--accent'
-        : 'ciyu-mini-btn';
+        ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn--md'
+        : 'ciyu-mini-btn ciyu-toggle-stable-btn--md';
       hideZhBtnEl.setAttribute('aria-pressed', String(props.hideChineseInBilingual));
     }
 
@@ -252,7 +258,7 @@ export function createListeningIntensiveView(
       item.dataset.active = String(isActive);
       const selBtn = item.querySelector<HTMLButtonElement>('.ciyu-seg-select-btn');
       if (selBtn) {
-        selBtn.textContent = isActive ? '当前精读段' : '选定本段';
+        selBtn.textContent = isActive ? '已选本段' : '选定本段';
         selBtn.className = isActive
           ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-seg-select-btn'
           : 'ciyu-mini-btn ciyu-seg-select-btn';
@@ -281,8 +287,415 @@ export function createListeningIntensiveView(
     hideZhBtnEl = null;
 
     root.innerHTML = '';
+    const companionRole = props.companionRole ?? 'full';
+    root.dataset.companionRole = companionRole;
     root.dataset.narrowPane = props.narrowPane;
     root.dataset.hideZh = String(Boolean(props.hideChineseInBilingual));
+
+    const buildTranscriptColumn = (
+      activeGroup: ListeningQuestionGroup,
+      clip: ReturnType<typeof computeClipWindow>,
+      tsLevel: string
+    ): HTMLElement => {
+      const transcriptCol = el(
+        'article',
+        'ciyu-surface ciyu-transcript-card ciyu-listen-col-transcript'
+      );
+
+      const modeHeader = el('div', 'ciyu-transcript-mode-header');
+      const modeTitleWrap = el('div', 'ciyu-paper-info');
+      modeTitleWrap.appendChild(el('strong', 'ciyu-settings-title', '听力原文对照'));
+
+      const tsBadge = el(
+        'span',
+        tsLevel === 'sentence'
+          ? 'ciyu-badge ciyu-badge--ok'
+          : clip.hasGroupClip || tsLevel === 'paragraph'
+          ? 'ciyu-badge ciyu-badge--accent'
+          : 'ciyu-badge ciyu-badge--neutral',
+        tsLevel === 'sentence'
+          ? '句级时间戳'
+          : clip.hasGroupClip
+          ? `题组切片 ${formatTime(clip.startSec)}–${formatTime(clip.endSec)}`
+          : tsLevel === 'paragraph'
+          ? '段落级时间戳'
+          : '整轨播放'
+      );
+      modeTitleWrap.appendChild(tsBadge);
+
+      const modeSwitch = el('div', 'ciyu-glass ciyu-mode-switch');
+      modeSwitch.setAttribute('role', 'group');
+      const modes: Array<{ id: ListeningTranscriptMode; label: string }> = [
+        { id: 'blind', label: '盲听' },
+        { id: 'en', label: '英文对照' },
+        { id: 'bilingual', label: '中英对照' },
+      ];
+      const modeBtns: HTMLButtonElement[] = [];
+      let activeModeIdx = 0;
+      modes.forEach((m, idx) => {
+        const isCurrent = props.transcriptMode === m.id;
+        if (isCurrent) activeModeIdx = idx;
+        const mBtn = el('button', 'ciyu-mode-btn', m.label);
+        mBtn.type = 'button';
+        mBtn.setAttribute('aria-pressed', String(isCurrent));
+        modeBtns.push(mBtn);
+        modeSwitch.appendChild(mBtn);
+      });
+      attachLiquidLens({
+        container: modeSwitch,
+        buttons: modeBtns,
+        activeIndex: activeModeIdx,
+        cacheKey: 'cet6-listening-transcript-mode',
+        onSelect: (idx) => {
+          const picked = modes[idx];
+          if (picked && picked.id !== props.transcriptMode) {
+            callbacks.onChangeTranscriptMode?.(picked.id);
+          }
+        },
+      });
+      modeHeader.append(modeTitleWrap, modeSwitch);
+
+      const sourceMeta = el('div', 'ciyu-source-meta-bar');
+      const srcInfo = el('span', 'ciyu-paper-info');
+      srcInfo.append(
+        el('span', 'ciyu-section-label', '来源：'),
+        el('span', undefined, props.transcriptSourceLabel)
+      );
+      sourceMeta.appendChild(srcInfo);
+
+      if (props.transcriptMode === 'bilingual') {
+        const hideZhBtn = el(
+          'button',
+          props.hideChineseInBilingual
+            ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn--md'
+            : 'ciyu-mini-btn ciyu-toggle-stable-btn--md',
+          props.hideChineseInBilingual ? '显示中文译文' : '单独隐藏中文'
+        );
+        hideZhBtn.type = 'button';
+        hideZhBtn.setAttribute('aria-pressed', String(props.hideChineseInBilingual));
+        hideZhBtn.addEventListener('click', () =>
+          callbacks.onToggleHideChinese?.(!props.hideChineseInBilingual)
+        );
+        hideZhBtnEl = hideZhBtn;
+        sourceMeta.appendChild(hideZhBtn);
+      }
+
+      const stickyHead = el('div', 'ciyu-transcript-sticky-head');
+      stickyHead.append(modeHeader, sourceMeta);
+      transcriptCol.appendChild(stickyHead);
+
+      const effectiveMode: ListeningTranscriptMode =
+        companionRole === 'transcript-only'
+          ? props.transcriptMode
+          : props.narrowPane === 'bilingual'
+          ? 'bilingual'
+          : props.narrowPane === 'en' && props.transcriptMode === 'blind'
+          ? 'en'
+          : props.transcriptMode;
+
+      if (effectiveMode === 'blind') {
+        const blindBox = el('div', 'ciyu-state-card');
+        const icon = el('div', 'ciyu-state-icon');
+        icon.appendChild(createIcon('headphones', 'lg'));
+        blindBox.append(
+          icon,
+          el('h4', 'ciyu-state-title', '当前处于「盲听自查」模式'),
+          el(
+            'p',
+            'ciyu-state-desc',
+            clip.clipActive
+              ? `已自动为你截取本题组音频片段（${formatTime(clip.startSec)} – ${formatTime(clip.endSec)}），播完自动暂停。先完成左侧作答再核对答案。`
+              : '已收起英文原文、中文译文和参考答案。请先播放音频并完成左侧作答，点「核对本组答案」后再展开原文逐句精听。'
+          )
+        );
+        const revealActions = el('div', 'ciyu-quick-picks');
+        const showEn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm', '展开英文对照');
+        showEn.type = 'button';
+        showEn.addEventListener('click', () => callbacks.onChangeTranscriptMode?.('en'));
+
+        const showBi = el('button', 'ciyu-btn ciyu-btn--glass ciyu-btn--sm', '展开中英对照');
+        showBi.type = 'button';
+        showBi.addEventListener('click', () => callbacks.onChangeTranscriptMode?.('bilingual'));
+
+        revealActions.append(showEn, showBi);
+        blindBox.appendChild(revealActions);
+        transcriptCol.appendChild(blindBox);
+      } else if (activeGroup.segments.length === 0) {
+        const emptyTranscriptCard = el('div', 'ciyu-state-card');
+        emptyTranscriptCard.append(
+          el('h4', 'ciyu-state-title', '当前套卷暂未附带独立听力文字稿'),
+          el(
+            'p',
+            'ciyu-state-desc',
+            '已为你截取每组音频片段并载入全部 25 道选择题与解析，支持选项划词查词与盲听自查。若有英文/双语听力原文（支持 [00:15] 时间戳），可粘贴补充保存。'
+          )
+        );
+
+        if (callbacks.onPasteTranscript) {
+          const togglePasteBtn = el(
+            'button',
+            'ciyu-btn ciyu-btn--glass ciyu-btn--sm',
+            showPasteBox ? '收起原文录入框' : '粘贴补充本套听力原文'
+          );
+          togglePasteBtn.type = 'button';
+          togglePasteBtn.addEventListener('click', () => {
+            showPasteBox = !showPasteBox;
+            render();
+          });
+          emptyTranscriptCard.appendChild(togglePasteBtn);
+
+          if (showPasteBox) {
+            const pasteForm = el('div', 'ciyu-paste-transcript-box');
+            const area = el('textarea', 'ciyu-textarea');
+            area.rows = 6;
+            area.placeholder =
+              '粘贴英文或双语听力原文（支持 [00:12] W: ... 或段落文本），保存后自动写入 词屿/六级题库/听力原文/ 并支持划词翻译。';
+            area.value = pasteDraft;
+            area.addEventListener('input', () => {
+              pasteDraft = area.value;
+            });
+            const saveTranscriptBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm', '保存并启用原文对照');
+            saveTranscriptBtn.type = 'button';
+            saveTranscriptBtn.addEventListener('click', () => {
+              if (!pasteDraft.trim()) return;
+              callbacks.onPasteTranscript?.(props.paperId, pasteDraft.trim());
+              showPasteBox = false;
+              pasteDraft = '';
+            });
+            pasteForm.append(area, saveTranscriptBtn);
+            emptyTranscriptCard.appendChild(pasteForm);
+          }
+        }
+        transcriptCol.appendChild(emptyTranscriptCard);
+      } else {
+        const hasDialogueSpeakers = activeGroup.segments.some(
+          (s) => s.speakerRole === 'a' || s.speakerRole === 'b'
+        );
+        const guideText = hasDialogueSpeakers
+          ? '♂ 男士（蓝标）· ♀ 女士（玫红标）｜点击「选定本段」自动跳到该段进度（暂停时保持暂停），拖选英文可查词。'
+          : '点击「选定本段」可自动跳到该段音频进度（暂停时保持暂停）；直接拖选英文可查词或加入生词本。';
+        transcriptCol.appendChild(el('div', 'ciyu-next-review-tag', guideText));
+
+        const segList = el('ul', 'ciyu-segment-list');
+        for (const seg of activeGroup.segments) {
+          const isSegActive = props.activeSegmentId === seg.id;
+          const item = el('li', 'ciyu-segment-item');
+          item.dataset.active = String(isSegActive);
+          item.dataset.segmentId = seg.id;
+          item.dataset.role = seg.speakerRole ?? 'narrator';
+
+          const segTop = el('div', 'ciyu-segment-top');
+          const leftBadges = el('div', 'ciyu-paper-info');
+          const speakerBadge = el('span', 'ciyu-speaker-badge', seg.speaker);
+          if (seg.speakerRole) speakerBadge.dataset.role = seg.speakerRole;
+          leftBadges.appendChild(speakerBadge);
+
+          if (seg.questionNumbers && seg.questionNumbers.length > 0) {
+            const firstQNo = seg.questionNumbers[0];
+            const targetQ = activeGroup.questions.find((q) => q.number === firstQNo);
+            const qJump = el(
+              'button',
+              'ciyu-mini-btn',
+              `对应第 ${seg.questionNumbers.join('、')} 题`
+            );
+            qJump.type = 'button';
+            qJump.addEventListener('click', () =>
+              callbacks.onJumpToQuestion?.(
+                firstQNo,
+                targetQ?.blockId ?? `cet6-${props.paperId}-q${firstQNo}`
+              )
+            );
+            leftBadges.appendChild(qJump);
+          }
+          segTop.appendChild(leftBadges);
+
+          const rightControls = el('div', 'ciyu-paper-actions');
+          if (typeof seg.startSec === 'number') {
+            const jumpBtn = el(
+              'button',
+              'ciyu-time-jump-btn',
+              seg.timeLabel ?? formatTime(seg.startSec)
+            );
+            jumpBtn.type = 'button';
+            jumpBtn.title = '跳转到本段音频位置（保持当前播放/暂停状态）';
+            jumpBtn.addEventListener('click', () => {
+              callbacks.onSelectSegment?.(seg.id, false);
+            });
+            rightControls.appendChild(jumpBtn);
+          }
+          const manualBtn = el(
+            'button',
+            isSegActive
+              ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-seg-select-btn'
+              : 'ciyu-mini-btn ciyu-seg-select-btn',
+            isSegActive ? '已选本段' : '选定本段'
+          );
+          manualBtn.type = 'button';
+          manualBtn.title = '选定本段并自动跳转到该段音频进度（原暂停则保持暂停）';
+          manualBtn.addEventListener('click', () => callbacks.onSelectSegment?.(seg.id, false));
+          rightControls.appendChild(manualBtn);
+          segTop.appendChild(rightControls);
+          item.appendChild(segTop);
+
+          if (seg.sentences && seg.sentences.length > 0) {
+            const sentWrap = el('div', 'ciyu-sentence-stack');
+            for (const sent of seg.sentences) {
+              const isSentActive =
+                tsLevel === 'sentence' && props.activeSentenceId === sent.id;
+              const pair = el('div', 'ciyu-sentence-pair');
+              pair.dataset.active = String(isSentActive);
+              pair.dataset.sentenceId = sent.id;
+
+              const enLine = el('p', 'ciyu-segment-en ciyu-selectable-prose');
+              if (tsLevel === 'sentence' && typeof sent.startSec === 'number') {
+                enLine.classList.add('ciyu-sentence-clickable');
+                enLine.title = `点击从该句开始重听 (${sent.timeLabel ?? formatTime(sent.startSec)})`;
+                enLine.addEventListener('click', () => {
+                  const sel = root.ownerDocument.getSelection();
+                  if (sel && !sel.isCollapsed) return;
+                  callbacks.onSelectSentence?.(seg.id, sent.id, sent.startSec);
+                });
+              }
+              enLine.textContent = sent.en;
+              pair.appendChild(enLine);
+
+              if (effectiveMode === 'bilingual') {
+                if (sent.zh) {
+                  pair.appendChild(el('p', 'ciyu-segment-zh', sent.zh));
+                } else {
+                  pair.appendChild(
+                    el('p', 'ciyu-segment-zh ciyu-segment-zh--missing', '（来源暂无该句中文译文）')
+                  );
+                }
+              }
+              sentWrap.appendChild(pair);
+            }
+            item.appendChild(sentWrap);
+          } else {
+            item.appendChild(el('p', 'ciyu-segment-en ciyu-selectable-prose', seg.textEn));
+            if (effectiveMode === 'bilingual') {
+              if (seg.translationZh) {
+                item.appendChild(el('p', 'ciyu-segment-zh', seg.translationZh));
+              } else {
+                item.appendChild(
+                  el('p', 'ciyu-segment-zh ciyu-segment-zh--missing', '（来源缺少本段中文译文，已保留完整英文）')
+                );
+              }
+            }
+          }
+
+          segList.appendChild(item);
+        }
+
+        if (
+          typeof activeGroup.questionsAudioStartSec === 'number' &&
+          typeof activeGroup.startSec === 'number' &&
+          activeGroup.questionsAudioStartSec > activeGroup.startSec
+        ) {
+          const qAudioItem = el('li', 'ciyu-segment-item');
+          qAudioItem.dataset.role = 'narrator';
+          const qTop = el('div', 'ciyu-segment-top');
+          const qBadge = el('span', 'ciyu-speaker-badge', `原声读题 · ${activeGroup.questionRange || activeGroup.title}`);
+          qBadge.dataset.role = 'narrator';
+          const qRight = el('div', 'ciyu-paper-actions');
+          const qRelSec = Math.max(0, activeGroup.questionsAudioStartSec - activeGroup.startSec);
+          const qTimeBtn = el('button', 'ciyu-time-jump-btn', `~${formatTime(qRelSec)}`);
+          qTimeBtn.type = 'button';
+          qTimeBtn.title = '跳转到本题组原声提问起点（保持当前播放/暂停状态）';
+          qTimeBtn.addEventListener('click', () => callbacks.onSeek?.(activeGroup.questionsAudioStartSec!));
+          const qJumpBtn = el('button', 'ciyu-mini-btn', '跳到提问音频');
+          qJumpBtn.type = 'button';
+          qJumpBtn.addEventListener('click', () => callbacks.onSeek?.(activeGroup.questionsAudioStartSec!));
+          qRight.append(qTimeBtn, qJumpBtn);
+          qTop.append(qBadge, qRight);
+          qAudioItem.append(
+            qTop,
+            el('p', 'ciyu-toggle-desc', `本题组切片已完整包含 ${activeGroup.questionRange || activeGroup.title} 的原声提问与作答停顿，点击可直接定位到提问处。`)
+          );
+          segList.appendChild(qAudioItem);
+        }
+
+        transcriptCol.appendChild(segList);
+      }
+
+      return transcriptCol;
+    };
+
+    // 双屏协作·右侧边栏专属模式：整屏专注显示当前题组的英文原文与中英对照翻译，与左侧宽屏实时联动
+    if (companionRole === 'transcript-only') {
+      trackStickyAudioBarHeight(null);
+      const activeGroup = resolveActiveGroup(props);
+      const compBar = el('header', 'ciyu-surface ciyu-companion-bar');
+      const compMeta = el('div', 'ciyu-companion-meta');
+      compMeta.appendChild(el('span', 'ciyu-badge ciyu-badge--accent', '双屏原文'));
+      compMeta.appendChild(
+        el(
+          'span',
+          'ciyu-companion-title',
+          activeGroup ? `Section ${activeGroup.section} · ${activeGroup.title}` : props.paperTitle
+        )
+      );
+      if (activeGroup?.questionRange) {
+        compMeta.appendChild(el('span', 'ciyu-badge ciyu-badge--neutral', activeGroup.questionRange));
+      }
+
+      const compActions = el('div', 'ciyu-toolbar-actions');
+      if (props.transcriptSavedPath) {
+        const openNoteBtn = el('button', 'ciyu-mini-btn');
+        openNoteBtn.type = 'button';
+        openNoteBtn.title = '在 Obsidian 中打开完整听力原文 Markdown';
+        openNoteBtn.append(createIcon('file-text', 'sm'), el('span', undefined, '全文'));
+        openNoteBtn.addEventListener('click', () =>
+          callbacks.onOpenSavedTranscriptNote?.(props.transcriptSavedPath!)
+        );
+        compActions.appendChild(openNoteBtn);
+      }
+      if (callbacks.onOpenInWideWorkspace) {
+        const closeWideBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm ciyu-wide-toggle-btn');
+        closeWideBtn.type = 'button';
+        closeWideBtn.title = '关闭左侧宽屏并恢复侧栏完整听力视图';
+        closeWideBtn.setAttribute('aria-pressed', 'true');
+        closeWideBtn.append(createIcon('arrow-left', 'sm'), el('span', undefined, '收起宽屏'));
+        closeWideBtn.addEventListener('click', () =>
+          callbacks.onOpenInWideWorkspace?.(props.paperId)
+        );
+        compActions.appendChild(closeWideBtn);
+      }
+      compBar.append(compMeta, compActions);
+      root.appendChild(compBar);
+
+      if (props.loadingPaper) {
+        const loadingCard = el('div', 'ciyu-surface ciyu-state-card');
+        loadingCard.append(
+          el('h4', 'ciyu-state-title', '正在同步听力原文…'),
+          el('p', 'ciyu-state-desc', '左侧加载完成后将自动显示本组英文原文与中文译文。')
+        );
+        root.appendChild(loadingCard);
+        return;
+      }
+      if (props.loadError) {
+        const errCard = el('div', 'ciyu-surface ciyu-state-card');
+        errCard.append(
+          el('h4', 'ciyu-state-title', '听力原文暂未载入'),
+          el('p', 'ciyu-state-desc', props.loadError)
+        );
+        root.appendChild(errCard);
+        return;
+      }
+      if (!activeGroup) return;
+
+      const clip = computeClipWindow(props, activeGroup);
+      currentClipStart = clip.startSec;
+      currentClipDuration = clip.duration;
+      const tsLevel = activeGroup.timestampLevel ?? (activeGroup.hasTimestamps ? 'paragraph' : 'none');
+      root.appendChild(buildTranscriptColumn(activeGroup, clip, tsLevel));
+
+      if (savedScrollTop >= 0 && scrollHost) {
+        scrollHost.scrollTop = savedScrollTop;
+        restoreVisibleSegmentAnchor(scrollHost, savedAnchor);
+      }
+      return;
+    }
 
     // 1. 顶部标题栏 + 套卷快速切换器 + 宽屏自查 / 下载全文 / 下载音频
     const topbar = el('header', 'ciyu-topbar-nav');
@@ -328,21 +741,7 @@ export function createListeningIntensiveView(
       leftNav.appendChild(el('strong', 'ciyu-settings-title', props.paperTitle));
     }
 
-    const rightTools = el('div', 'ciyu-toolbar-actions');
-
-    if (callbacks.onOpenInWideWorkspace) {
-      const wideBtn = el('button', 'ciyu-btn ciyu-btn--glass ciyu-btn--sm');
-      wideBtn.type = 'button';
-      wideBtn.title = '在 Obsidian 主阅读区打开左右双栏宽屏听力自查';
-      wideBtn.append(
-        createIcon('arrow-up-right', 'sm'),
-        el('span', undefined, '宽屏自查')
-      );
-      wideBtn.addEventListener('click', () =>
-        callbacks.onOpenInWideWorkspace?.(props.paperId)
-      );
-      rightTools.appendChild(wideBtn);
-    }
+    const rightTools = el('div', 'ciyu-toolbar-actions ciyu-listening-top-actions');
 
     const dlTextBtn = el(
       'button',
@@ -398,6 +797,23 @@ export function createListeningIntensiveView(
     );
     rightTools.appendChild(dlAudioBtn);
 
+    const scoreCalcBtn = el(
+      'button',
+      scoreCalcOpen ? 'ciyu-btn ciyu-btn--primary ciyu-btn--sm' : 'ciyu-btn ciyu-btn--glass ciyu-btn--sm'
+    );
+    scoreCalcBtn.type = 'button';
+    scoreCalcBtn.title = '打开纸质版听力算分器（按四六级官方权重精确算分）';
+    scoreCalcBtn.setAttribute('aria-pressed', String(scoreCalcOpen));
+    scoreCalcBtn.append(
+      createIcon('sliders', 'sm'),
+      el('span', undefined, scoreCalcWrongs.size > 0 ? `算分 (${scoreCalcWrongs.size}错)` : '听力算分')
+    );
+    scoreCalcBtn.addEventListener('click', () => {
+      scoreCalcOpen = !scoreCalcOpen;
+      render();
+    });
+    rightTools.appendChild(scoreCalcBtn);
+
     if (callbacks.onOpenReader) {
       const readerBtn = el('button', 'ciyu-btn ciyu-btn--glass ciyu-btn--sm', '整卷');
       readerBtn.type = 'button';
@@ -405,8 +821,55 @@ export function createListeningIntensiveView(
       rightTools.appendChild(readerBtn);
     }
 
+    if (callbacks.onOpenInWideWorkspace) {
+      const isWide = Boolean(props.isWideOpen);
+      const wideBtn = el(
+        'button',
+        isWide
+          ? 'ciyu-btn ciyu-btn--primary ciyu-btn--sm ciyu-wide-toggle-btn'
+          : 'ciyu-btn ciyu-btn--glass ciyu-btn--sm ciyu-wide-toggle-btn'
+      );
+      wideBtn.type = 'button';
+      wideBtn.title = isWide
+        ? '关闭宽屏工作区并回到侧栏'
+        : '在 Obsidian 主阅读区打开左右双栏宽屏听力自查';
+      wideBtn.setAttribute('aria-pressed', String(isWide));
+      wideBtn.append(
+        createIcon(isWide ? 'arrow-left' : 'arrow-up-right', 'sm'),
+        el('span', undefined, isWide ? '收起宽屏' : '宽屏自查')
+      );
+      wideBtn.addEventListener('click', () =>
+        callbacks.onOpenInWideWorkspace?.(props.paperId)
+      );
+      rightTools.appendChild(wideBtn);
+    }
+
     topbar.append(leftNav, rightTools);
     root.appendChild(topbar);
+
+    if (scoreCalcOpen) {
+      root.appendChild(
+        createListeningScoreCalculator({
+          paperTitle: props.paperTitle,
+          wrongSet: scoreCalcWrongs,
+          getOnlineWrongNumbers: () => {
+            const wrongs: number[] = [];
+            for (const g of props.groups) {
+              for (const q of g.questions) {
+                if (q.selectedKey && q.answerKey && q.selectedKey !== q.answerKey) {
+                  wrongs.push(q.number);
+                }
+              }
+            }
+            return wrongs;
+          },
+          onClose: () => {
+            scoreCalcOpen = false;
+            render();
+          },
+        })
+      );
+    }
 
     if (props.loadingPaper) {
       const loadingCard = el('div', 'ciyu-surface ciyu-state-card');
@@ -775,13 +1238,15 @@ export function createListeningIntensiveView(
         const looping = props.loopSegmentId === loopTargetId;
         const loopBtn = el(
           'button',
-          looping ? 'ciyu-mini-btn ciyu-mini-btn--accent' : 'ciyu-mini-btn'
+          looping
+            ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn--md'
+            : 'ciyu-mini-btn ciyu-toggle-stable-btn--md'
         );
         loopBtn.type = 'button';
         loopBtn.setAttribute('aria-pressed', String(looping));
         loopBtn.append(
           createIcon('repeat', 'sm'),
-          el('span', undefined, looping ? '循环本段中' : '循环本段')
+          el('span', undefined, looping ? '单段循环' : '循环本段')
         );
         loopBtn.addEventListener('click', () =>
           callbacks.onToggleLoopSegment?.(loopTargetId)
@@ -812,31 +1277,33 @@ export function createListeningIntensiveView(
 
     if (!activeGroup) return;
 
-    // 4. 窄侧栏专用「自查题目 / 英文原文 / 中英对照」切换条
-    const narrowSwitch = el('div', 'ciyu-glass ciyu-narrow-pane-switch');
-    narrowSwitch.setAttribute('role', 'tablist');
-    const narrowTabs: Array<{ id: ListeningNarrowPane; label: string }> = [
-      { id: 'questions', label: '自查题目' },
-      { id: 'en', label: '英文原文' },
-      { id: 'bilingual', label: '中英对照' },
-    ];
-    for (const nt of narrowTabs) {
-      const active = props.narrowPane === nt.id;
-      const btn = el('button', 'ciyu-modal-tab', nt.label);
-      btn.type = 'button';
-      btn.setAttribute('role', 'tab');
-      btn.setAttribute('aria-selected', String(active));
-      btn.addEventListener('click', () => {
-        callbacks.onChangeNarrowPane?.(nt.id);
-        if (nt.id === 'en' && props.transcriptMode === 'blind') {
-          callbacks.onChangeTranscriptMode?.('en');
-        } else if (nt.id === 'bilingual' && props.transcriptMode !== 'bilingual') {
-          callbacks.onChangeTranscriptMode?.('bilingual');
-        }
-      });
-      narrowSwitch.appendChild(btn);
+    // 4. 窄侧栏专用「自查题目 / 英文原文 / 中英对照」切换条（双屏左栏做题模式下隐藏，避免与右侧原文栏重复）
+    if (companionRole !== 'questions-only') {
+      const narrowSwitch = el('div', 'ciyu-glass ciyu-narrow-pane-switch');
+      narrowSwitch.setAttribute('role', 'tablist');
+      const narrowTabs: Array<{ id: ListeningNarrowPane; label: string }> = [
+        { id: 'questions', label: '自查题目' },
+        { id: 'en', label: '英文原文' },
+        { id: 'bilingual', label: '中英对照' },
+      ];
+      for (const nt of narrowTabs) {
+        const active = props.narrowPane === nt.id;
+        const btn = el('button', 'ciyu-modal-tab', nt.label);
+        btn.type = 'button';
+        btn.setAttribute('role', 'tab');
+        btn.setAttribute('aria-selected', String(active));
+        btn.addEventListener('click', () => {
+          callbacks.onChangeNarrowPane?.(nt.id);
+          if (nt.id === 'en' && props.transcriptMode === 'blind') {
+            callbacks.onChangeTranscriptMode?.('en');
+          } else if (nt.id === 'bilingual' && props.transcriptMode !== 'bilingual') {
+            callbacks.onChangeTranscriptMode?.('bilingual');
+          }
+        });
+        narrowSwitch.appendChild(btn);
+      }
+      root.appendChild(narrowSwitch);
     }
-    root.appendChild(narrowSwitch);
 
     // 5. 主体双栏（宽窗口：左栏听力自查做题判分，右栏听力原文三模式对照）
     const grid = el('div', 'ciyu-listening-dual-grid');
@@ -1081,38 +1548,107 @@ export function createListeningIntensiveView(
     }
     questionCol.appendChild(qList);
 
+    const weightPerQ = activeGroup.section === 'C' ? 14.2 : 7.1;
+    const grpTotal = activeGroup.questions.length;
+    const grpCorrectCount = activeGroup.questions.filter(
+      (q) => q.selectedKey && q.selectedKey === q.answerKey
+    ).length;
+    const grpWrongCount = activeGroup.questions.filter(
+      (q) => q.selectedKey && q.selectedKey !== q.answerKey
+    ).length;
+    const grpEarned = Math.round(grpCorrectCount * weightPerQ * 10) / 10;
+    const grpMax = Math.round(grpTotal * weightPerQ * 10) / 10;
+
     const showAnsBox = props.answersExpanded;
-    const answerBtn = el('button', 'ciyu-disclosure-btn');
+    const answerBtn = el(
+      'button',
+      isGroupChecked ? 'ciyu-disclosure-btn ciyu-disclosure-btn--checked' : 'ciyu-disclosure-btn'
+    );
     answerBtn.type = 'button';
     answerBtn.setAttribute('aria-expanded', String(showAnsBox));
-    answerBtn.appendChild(
+    const btnLeft = el('span', 'ciyu-paper-info');
+    btnLeft.append(
+      createIcon(isGroupChecked ? 'check-circle-2' : 'sparkles', 'sm'),
       el(
         'span',
         undefined,
-        showAnsBox
-          ? `收起参考答案与解析汇总（${activeGroup.questionRange}）`
-          : `展开参考答案与解析汇总（${activeGroup.questionRange} · 默认折叠）`
+        isGroupChecked
+          ? showAnsBox
+            ? `收起本组核对结果（${activeGroup.questionRange}）`
+            : `展开本组核对结果（${activeGroup.questionRange}）`
+          : `一键核对本组答案（${activeGroup.questionRange}）`
       )
     );
+    if (isGroupChecked) {
+      btnLeft.appendChild(
+        el(
+          'span',
+          grpWrongCount === 0 && grpCorrectCount === grpTotal
+            ? 'ciyu-badge ciyu-badge--ok'
+            : 'ciyu-badge ciyu-badge--accent',
+          `对 ${grpCorrectCount}/${grpTotal} · ${grpEarned.toFixed(1)}/${grpMax.toFixed(1)} 分`
+        )
+      );
+    }
+    answerBtn.appendChild(btnLeft);
     const chev = createIcon('chevron-down', 'sm');
     chev.classList.add('ciyu-disclosure-chevron');
     answerBtn.appendChild(chev);
-    answerBtn.addEventListener('click', () =>
-      callbacks.onToggleAnswers?.(!props.answersExpanded)
-    );
+    answerBtn.addEventListener('click', () => {
+      if (!isGroupChecked) {
+        callbacks.onSubmitGroupSelfCheck?.(activeGroup.id);
+        if (!props.answersExpanded) callbacks.onToggleAnswers?.(true);
+      } else {
+        callbacks.onToggleAnswers?.(!props.answersExpanded);
+      }
+    });
     questionCol.appendChild(answerBtn);
 
     if (showAnsBox) {
-      const ansBox = el('div', 'ciyu-answer-box');
+      const ansBox = el('div', 'ciyu-answer-box ciyu-answer-box--graded');
+      const summaryBar = el('div', 'ciyu-answer-summary-bar');
+      summaryBar.append(
+        el(
+          'span',
+          'ciyu-toggle-title',
+          `本组核对：对 ${grpCorrectCount} / ${grpTotal} 题 · 得 ${grpEarned.toFixed(1)} / ${grpMax.toFixed(1)} 分`
+        )
+      );
+      const wrongQs = activeGroup.questions.filter(
+        (q) => q.selectedKey && q.selectedKey !== q.answerKey
+      );
+      if (wrongQs.length > 0 && callbacks.onAddWrongListeningToMistakes) {
+        const addAllWrongBtn = el('button', 'ciyu-mini-btn ciyu-mini-btn--danger', `本组 ${wrongQs.length} 道错题入错题本`);
+        addAllWrongBtn.type = 'button';
+        addAllWrongBtn.addEventListener('click', () =>
+          callbacks.onAddWrongListeningToMistakes?.(wrongQs)
+        );
+        summaryBar.appendChild(addAllWrongBtn);
+      }
+      ansBox.appendChild(summaryBar);
+
       for (const q of activeGroup.questions) {
-        const row = el('div');
-        const statusStr =
-          q.selectedKey && q.selectedKey !== q.answerKey
-            ? `（已选 ${q.selectedKey}）`
-            : q.selectedKey === q.answerKey
-            ? '（正确）'
-            : '';
-        row.appendChild(el('strong', undefined, `第 ${q.number} 题：${q.answerKey} ${statusStr}`));
+        const isCorrect = Boolean(q.selectedKey && q.selectedKey === q.answerKey);
+        const isWrong = Boolean(q.selectedKey && q.selectedKey !== q.answerKey);
+        const row = el('div', 'ciyu-answer-graded-row');
+        const headLine = el('div', 'ciyu-answer-graded-head');
+        headLine.append(
+          el('strong', 'ciyu-answer-qnum', `第 ${q.number} 题`),
+          el(
+            'span',
+            isCorrect
+              ? 'ciyu-badge ciyu-badge--ok'
+              : isWrong
+                ? 'ciyu-badge ciyu-badge--danger'
+                : 'ciyu-badge ciyu-badge--neutral',
+            isCorrect
+              ? `✓ 正确（选 ${q.answerKey}）`
+              : isWrong
+                ? `✗ 错 · 选 ${q.selectedKey} → 正解 ${q.answerKey}`
+                : `未作答 · 正解 ${q.answerKey}`
+          )
+        );
+        row.appendChild(headLine);
         if (q.explanation) {
           row.appendChild(el('p', 'ciyu-toggle-desc', q.explanation));
         }
@@ -1121,325 +1657,11 @@ export function createListeningIntensiveView(
       questionCol.appendChild(ansBox);
     }
 
-    // ========== 右栏：核心功能「听力原文对照」（盲听 / 英文对照 / 中英对照） ==========
-    const transcriptCol = el(
-      'article',
-      'ciyu-surface ciyu-transcript-card ciyu-listen-col-transcript'
-    );
-
-    const modeHeader = el('div', 'ciyu-transcript-mode-header');
-    const modeTitleWrap = el('div', 'ciyu-paper-info');
-    modeTitleWrap.appendChild(el('strong', 'ciyu-settings-title', '听力原文对照'));
-
-    const tsBadge = el(
-      'span',
-      tsLevel === 'sentence'
-        ? 'ciyu-badge ciyu-badge--ok'
-        : clip.hasGroupClip || tsLevel === 'paragraph'
-        ? 'ciyu-badge ciyu-badge--accent'
-        : 'ciyu-badge ciyu-badge--neutral',
-      tsLevel === 'sentence'
-        ? '句级时间戳'
-        : clip.hasGroupClip
-        ? `题组切片 ${formatTime(clip.startSec)}–${formatTime(clip.endSec)}`
-        : tsLevel === 'paragraph'
-        ? '段落级时间戳'
-        : '整轨播放'
-    );
-    modeTitleWrap.appendChild(tsBadge);
-
-    const modeSwitch = el('div', 'ciyu-glass ciyu-mode-switch');
-    modeSwitch.setAttribute('role', 'group');
-    const modes: Array<{ id: ListeningTranscriptMode; label: string }> = [
-      { id: 'blind', label: '盲听' },
-      { id: 'en', label: '英文对照' },
-      { id: 'bilingual', label: '中英对照' },
-    ];
-    const modeBtns: HTMLButtonElement[] = [];
-    let activeModeIdx = 0;
-    modes.forEach((m, idx) => {
-      const isCurrent = props.transcriptMode === m.id;
-      if (isCurrent) activeModeIdx = idx;
-      const mBtn = el('button', 'ciyu-mode-btn', m.label);
-      mBtn.type = 'button';
-      mBtn.setAttribute('aria-pressed', String(isCurrent));
-      modeBtns.push(mBtn);
-      modeSwitch.appendChild(mBtn);
-    });
-    attachLiquidLens({
-      container: modeSwitch,
-      buttons: modeBtns,
-      activeIndex: activeModeIdx,
-      cacheKey: 'cet6-listening-transcript-mode',
-      onSelect: (idx) => {
-        const picked = modes[idx];
-        if (picked && picked.id !== props.transcriptMode) {
-          callbacks.onChangeTranscriptMode?.(picked.id);
-        }
-      },
-    });
-    modeHeader.append(modeTitleWrap, modeSwitch);
-
-    const sourceMeta = el('div', 'ciyu-source-meta-bar');
-    const srcInfo = el('span', 'ciyu-paper-info');
-    srcInfo.append(
-      el('span', 'ciyu-section-label', '来源：'),
-      el('span', undefined, props.transcriptSourceLabel)
-    );
-    sourceMeta.appendChild(srcInfo);
-
-    if (props.transcriptMode === 'bilingual') {
-      const hideZhBtn = el(
-        'button',
-        props.hideChineseInBilingual ? 'ciyu-mini-btn ciyu-mini-btn--accent' : 'ciyu-mini-btn',
-        props.hideChineseInBilingual ? '显示中文译文' : '单独隐藏中文'
-      );
-      hideZhBtn.type = 'button';
-      hideZhBtn.setAttribute('aria-pressed', String(props.hideChineseInBilingual));
-      hideZhBtn.addEventListener('click', () =>
-        callbacks.onToggleHideChinese?.(!props.hideChineseInBilingual)
-      );
-      hideZhBtnEl = hideZhBtn;
-      sourceMeta.appendChild(hideZhBtn);
-    }
-
-    const stickyHead = el('div', 'ciyu-transcript-sticky-head');
-    stickyHead.append(modeHeader, sourceMeta);
-    transcriptCol.appendChild(stickyHead);
-
-    const effectiveMode: ListeningTranscriptMode =
-      props.narrowPane === 'bilingual'
-        ? 'bilingual'
-        : props.narrowPane === 'en' && props.transcriptMode === 'blind'
-        ? 'en'
-        : props.transcriptMode;
-
-    if (effectiveMode === 'blind') {
-      const blindBox = el('div', 'ciyu-state-card');
-      const icon = el('div', 'ciyu-state-icon');
-      icon.appendChild(createIcon('headphones', 'lg'));
-      blindBox.append(
-        icon,
-        el('h4', 'ciyu-state-title', '当前处于「盲听自查」模式'),
-        el(
-          'p',
-          'ciyu-state-desc',
-          clip.clipActive
-            ? `已自动为你截取本题组音频片段（${formatTime(clip.startSec)} – ${formatTime(clip.endSec)}），播完自动暂停。先完成左侧作答再核对答案。`
-            : '已收起英文原文、中文译文和参考答案。请先播放音频并完成左侧作答，点「核对本组答案」后再展开原文逐句精听。'
-        )
-      );
-      const revealActions = el('div', 'ciyu-quick-picks');
-      const showEn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm', '展开英文对照');
-      showEn.type = 'button';
-      showEn.addEventListener('click', () => callbacks.onChangeTranscriptMode?.('en'));
-
-      const showBi = el('button', 'ciyu-btn ciyu-btn--glass ciyu-btn--sm', '展开中英对照');
-      showBi.type = 'button';
-      showBi.addEventListener('click', () => callbacks.onChangeTranscriptMode?.('bilingual'));
-
-      revealActions.append(showEn, showBi);
-      blindBox.appendChild(revealActions);
-      transcriptCol.appendChild(blindBox);
-    } else if (activeGroup.segments.length === 0) {
-      const emptyTranscriptCard = el('div', 'ciyu-state-card');
-      emptyTranscriptCard.append(
-        el('h4', 'ciyu-state-title', '当前套卷暂未附带独立听力文字稿'),
-        el(
-          'p',
-          'ciyu-state-desc',
-          '已为你截取每组音频片段并载入全部 25 道选择题与解析，支持选项划词查词与盲听自查。若有英文/双语听力原文（支持 [00:15] 时间戳），可粘贴补充保存。'
-        )
-      );
-
-      if (callbacks.onPasteTranscript) {
-        const togglePasteBtn = el(
-          'button',
-          'ciyu-btn ciyu-btn--glass ciyu-btn--sm',
-          showPasteBox ? '收起原文录入框' : '粘贴补充本套听力原文'
-        );
-        togglePasteBtn.type = 'button';
-        togglePasteBtn.addEventListener('click', () => {
-          showPasteBox = !showPasteBox;
-          render();
-        });
-        emptyTranscriptCard.appendChild(togglePasteBtn);
-
-        if (showPasteBox) {
-          const pasteForm = el('div', 'ciyu-paste-transcript-box');
-          const area = el('textarea', 'ciyu-textarea');
-          area.rows = 6;
-          area.placeholder =
-            '粘贴英文或双语听力原文（支持 [00:12] W: ... 或段落文本），保存后自动写入 词屿/六级题库/听力原文/ 并支持划词翻译。';
-          area.value = pasteDraft;
-          area.addEventListener('input', () => {
-            pasteDraft = area.value;
-          });
-          const saveTranscriptBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm', '保存并启用原文对照');
-          saveTranscriptBtn.type = 'button';
-          saveTranscriptBtn.addEventListener('click', () => {
-            if (!pasteDraft.trim()) return;
-            callbacks.onPasteTranscript?.(props.paperId, pasteDraft.trim());
-            showPasteBox = false;
-            pasteDraft = '';
-          });
-          pasteForm.append(area, saveTranscriptBtn);
-          emptyTranscriptCard.appendChild(pasteForm);
-        }
-      }
-      transcriptCol.appendChild(emptyTranscriptCard);
+    if (companionRole === 'questions-only') {
+      grid.append(questionCol);
     } else {
-      const hasDialogueSpeakers = activeGroup.segments.some(
-        (s) => s.speakerRole === 'a' || s.speakerRole === 'b'
-      );
-      const guideText = hasDialogueSpeakers
-        ? '♂ 男士（蓝标）· ♀ 女士（玫红标）｜点击「选定本段」自动跳到该段进度（暂停时保持暂停），拖选英文可查词。'
-        : '点击「选定本段」可自动跳到该段音频进度（暂停时保持暂停）；直接拖选英文可查词或加入生词本。';
-      transcriptCol.appendChild(el('div', 'ciyu-next-review-tag', guideText));
-
-      const segList = el('ul', 'ciyu-segment-list');
-      for (const seg of activeGroup.segments) {
-        const isSegActive = props.activeSegmentId === seg.id;
-        const item = el('li', 'ciyu-segment-item');
-        item.dataset.active = String(isSegActive);
-        item.dataset.segmentId = seg.id;
-        item.dataset.role = seg.speakerRole ?? 'narrator';
-
-        const segTop = el('div', 'ciyu-segment-top');
-        const leftBadges = el('div', 'ciyu-paper-info');
-        const speakerBadge = el('span', 'ciyu-speaker-badge', seg.speaker);
-        if (seg.speakerRole) speakerBadge.dataset.role = seg.speakerRole;
-        leftBadges.appendChild(speakerBadge);
-
-        if (seg.questionNumbers && seg.questionNumbers.length > 0) {
-          const firstQNo = seg.questionNumbers[0];
-          const targetQ = activeGroup.questions.find((q) => q.number === firstQNo);
-          const qJump = el(
-            'button',
-            'ciyu-mini-btn',
-            `对应第 ${seg.questionNumbers.join('、')} 题`
-          );
-          qJump.type = 'button';
-          qJump.addEventListener('click', () =>
-            callbacks.onJumpToQuestion?.(
-              firstQNo,
-              targetQ?.blockId ?? `cet6-${props.paperId}-q${firstQNo}`
-            )
-          );
-          leftBadges.appendChild(qJump);
-        }
-        segTop.appendChild(leftBadges);
-
-        const rightControls = el('div', 'ciyu-paper-actions');
-        if (typeof seg.startSec === 'number') {
-          const jumpBtn = el(
-            'button',
-            'ciyu-time-jump-btn',
-            seg.timeLabel ?? formatTime(seg.startSec)
-          );
-          jumpBtn.type = 'button';
-          jumpBtn.title = '跳转到本段音频位置（保持当前播放/暂停状态）';
-          jumpBtn.addEventListener('click', () => {
-            callbacks.onSelectSegment?.(seg.id, false);
-          });
-          rightControls.appendChild(jumpBtn);
-        }
-        const manualBtn = el(
-          'button',
-          isSegActive
-            ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-seg-select-btn'
-            : 'ciyu-mini-btn ciyu-seg-select-btn',
-          isSegActive ? '当前精读段' : '选定本段'
-        );
-        manualBtn.type = 'button';
-        manualBtn.title = '选定本段并自动跳转到该段音频进度（原暂停则保持暂停）';
-        manualBtn.addEventListener('click', () => callbacks.onSelectSegment?.(seg.id, false));
-        rightControls.appendChild(manualBtn);
-        segTop.appendChild(rightControls);
-        item.appendChild(segTop);
-
-        if (seg.sentences && seg.sentences.length > 0) {
-          const sentWrap = el('div', 'ciyu-sentence-stack');
-          for (const sent of seg.sentences) {
-            const isSentActive =
-              tsLevel === 'sentence' && props.activeSentenceId === sent.id;
-            const pair = el('div', 'ciyu-sentence-pair');
-            pair.dataset.active = String(isSentActive);
-            pair.dataset.sentenceId = sent.id;
-
-            const enLine = el('p', 'ciyu-segment-en ciyu-selectable-prose');
-            if (tsLevel === 'sentence' && typeof sent.startSec === 'number') {
-              enLine.classList.add('ciyu-sentence-clickable');
-              enLine.title = `点击从该句开始重听 (${sent.timeLabel ?? formatTime(sent.startSec)})`;
-              enLine.addEventListener('click', () => {
-                const sel = root.ownerDocument.getSelection();
-                if (sel && !sel.isCollapsed) return;
-                callbacks.onSelectSentence?.(seg.id, sent.id, sent.startSec);
-              });
-            }
-            enLine.textContent = sent.en;
-            pair.appendChild(enLine);
-
-            if (effectiveMode === 'bilingual') {
-              if (sent.zh) {
-                pair.appendChild(el('p', 'ciyu-segment-zh', sent.zh));
-              } else {
-                pair.appendChild(
-                  el('p', 'ciyu-segment-zh ciyu-segment-zh--missing', '（来源暂无该句中文译文）')
-                );
-              }
-            }
-            sentWrap.appendChild(pair);
-          }
-          item.appendChild(sentWrap);
-        } else {
-          item.appendChild(el('p', 'ciyu-segment-en ciyu-selectable-prose', seg.textEn));
-          if (effectiveMode === 'bilingual') {
-            if (seg.translationZh) {
-              item.appendChild(el('p', 'ciyu-segment-zh', seg.translationZh));
-            } else {
-              item.appendChild(
-                el('p', 'ciyu-segment-zh ciyu-segment-zh--missing', '（来源缺少本段中文译文，已保留完整英文）')
-              );
-            }
-          }
-        }
-
-        segList.appendChild(item);
-      }
-
-      if (
-        typeof activeGroup.questionsAudioStartSec === 'number' &&
-        typeof activeGroup.startSec === 'number' &&
-        activeGroup.questionsAudioStartSec > activeGroup.startSec
-      ) {
-        const qAudioItem = el('li', 'ciyu-segment-item');
-        qAudioItem.dataset.role = 'narrator';
-        const qTop = el('div', 'ciyu-segment-top');
-        const qBadge = el('span', 'ciyu-speaker-badge', `原声读题 · ${activeGroup.questionRange || activeGroup.title}`);
-        qBadge.dataset.role = 'narrator';
-        const qRight = el('div', 'ciyu-paper-actions');
-        const qRelSec = Math.max(0, activeGroup.questionsAudioStartSec - activeGroup.startSec);
-        const qTimeBtn = el('button', 'ciyu-time-jump-btn', `~${formatTime(qRelSec)}`);
-        qTimeBtn.type = 'button';
-        qTimeBtn.title = '跳转到本题组原声提问起点（保持当前播放/暂停状态）';
-        qTimeBtn.addEventListener('click', () => callbacks.onSeek?.(activeGroup.questionsAudioStartSec!));
-        const qJumpBtn = el('button', 'ciyu-mini-btn', '跳到提问音频');
-        qJumpBtn.type = 'button';
-        qJumpBtn.addEventListener('click', () => callbacks.onSeek?.(activeGroup.questionsAudioStartSec!));
-        qRight.append(qTimeBtn, qJumpBtn);
-        qTop.append(qBadge, qRight);
-        qAudioItem.append(
-          qTop,
-          el('p', 'ciyu-toggle-desc', `本题组切片已完整包含 ${activeGroup.questionRange || activeGroup.title} 的原声提问与作答停顿，点击可直接定位到提问处。`)
-        );
-        segList.appendChild(qAudioItem);
-      }
-
-      transcriptCol.appendChild(segList);
+      grid.append(questionCol, buildTranscriptColumn(activeGroup, clip, tsLevel));
     }
-
-    grid.append(questionCol, transcriptCol);
     root.appendChild(grid);
 
     if (savedScrollTop >= 0 && scrollHost) {
@@ -1448,11 +1670,15 @@ export function createListeningIntensiveView(
     }
   }
 
-  // 精听键盘快捷流：Space 播放/暂停，← / → 快退/快进 5 秒，R 重听当前题组
+  // 精听键盘快捷流（捕获阶段 + 防双视图重复触发 + 防按钮 keyup 二次点击）：
+  // Space 播放/暂停，← / → 快退/快进 5 秒，R 重听当前题组
   const onListeningKeydown = (e: KeyboardEvent) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
-    if (!root.isConnected || root.hidden || root.offsetParent === null) return;
+    if (props.companionRole === 'transcript-only') return;
+    if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!root.isConnected || root.hidden) return;
     if (props.groups.length === 0) return;
+    const rect = root.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
     const activeEl = root.ownerDocument?.activeElement as HTMLElement | null;
     if (
       activeEl &&
@@ -1465,16 +1691,25 @@ export function createListeningIntensiveView(
     }
     if (e.code === 'Space' || e.key === ' ') {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      if (activeEl && activeEl.tagName === 'BUTTON' && root.contains(activeEl)) {
+        activeEl.blur();
+      }
       callbacks.onTogglePlay?.();
       return;
     }
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       callbacks.onStepSkip?.(-5);
       return;
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
       callbacks.onStepSkip?.(5);
       return;
     }
@@ -1482,6 +1717,8 @@ export function createListeningIntensiveView(
       const grp = resolveActiveGroup(props);
       if (grp) {
         e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
         if (callbacks.onPlayGroupClip && typeof grp.startSec === 'number') {
           callbacks.onPlayGroupClip(grp.id);
         } else if (typeof grp.startSec === 'number') {
@@ -1490,8 +1727,9 @@ export function createListeningIntensiveView(
       }
     }
   };
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', onListeningKeydown);
+  const keyDoc = root.ownerDocument;
+  if (keyDoc) {
+    keyDoc.addEventListener('keydown', onListeningKeydown, true);
   }
 
   render();
@@ -1501,15 +1739,15 @@ export function createListeningIntensiveView(
     update(nextProps) {
       props = nextProps;
       const nextSig = structureSignature(props);
-      if (nextSig === lastStructureSig && playerBarEl?.isConnected) {
+      if (nextSig === lastStructureSig && (playerBarEl?.isConnected || props.companionRole === 'transcript-only')) {
         patchPlaybackInPlace();
         return;
       }
       render();
     },
     destroy() {
-      if (typeof window !== 'undefined') {
-        window.removeEventListener('keydown', onListeningKeydown);
+      if (keyDoc) {
+        keyDoc.removeEventListener('keydown', onListeningKeydown, true);
       }
       audioBarResizeObs?.disconnect();
       audioBarResizeObs = null;

@@ -10,7 +10,7 @@ import './styles/cet6.css';
 export * from './types';
 export { CIYU_VERSION, CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD } from './changelog';
 export { CIYU_COLOR_THEMES, DEFAULT_CUSTOM_THEME, applyColorTheme, resolveThemeColors } from './themes';
-export { createIcon, type IconName } from './icons';
+export { createIcon, createBrandLogo, CIYU_BRAND_ICON_INNER, type IconName } from './icons';
 export { ensureLiquidGlassFilter, applyGlassPreferences } from './glass';
 export { showCiyuToast, destroyCiyuToasts, type CiyuToastTone, type CiyuToastOptions, type CiyuToastHandle } from './toast';
 export { createSegmentedNav, type SegmentedNavProps, type SegmentedNavCallbacks } from './components/SegmentedNav';
