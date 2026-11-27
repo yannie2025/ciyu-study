@@ -1,0 +1,187 @@
+/* ==========================================================================
+   词屿 v0.4 本地双栏预览壳层样式（仅用于 preview/，不进入 dist/ciyu-study/）
+   模拟 Obsidian 桌面端 800px 主工作区 + 360px 侧栏。
+   ========================================================================== */
+
+:root,
+body.theme-light {
+  --background-primary: #ffffff;
+  --background-primary-alt: #f9f9fb;
+  --background-secondary: #f2f2f7;
+  --background-secondary-alt: #e5e5ea;
+  --background-modifier-border: rgba(60, 60, 67, 0.11);
+  --text-normal: #1c1c1e;
+  --text-muted: #636366;
+  --text-faint: #8e8e93;
+  --text-on-accent: #ffffff;
+  --font-interface: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-monospace: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --pv-chrome: #ebebf0;
+  --pv-border: rgba(60, 60, 67, 0.13);
+  --pv-chip: rgba(255, 255, 255, 0.9);
+}
+
+body.theme-dark {
+  --background-primary: #2c2c2e;
+  --background-primary-alt: #242426;
+  --background-secondary: #1c1c1e;
+  --background-secondary-alt: #141416;
+  --background-modifier-border: rgba(255, 255, 255, 0.1);
+  --text-normal: #f5f5f7;
+  --text-muted: #aeaeb2;
+  --text-faint: #8e8e93;
+  --text-on-accent: #ffffff;
+
+  --pv-chrome: #121214;
+  --pv-border: rgba(255, 255, 255, 0.11);
+  --pv-chip: rgba(44, 44, 46, 0.92);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--font-interface);
+  background: var(--pv-chrome);
+  color: var(--text-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+#preview-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 8px 14px;
+  background: var(--pv-chrome);
+  border-bottom: 1px solid var(--pv-border);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pv-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.pv-title {
+  font-weight: 650;
+  font-size: 12.5px;
+  margin-right: 4px;
+}
+
+.pv-btn {
+  border: 1px solid var(--pv-border);
+  background: var(--pv-chip);
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.pv-btn:hover {
+  color: var(--text-normal);
+}
+
+.pv-btn[data-active="true"] {
+  background: #007aff;
+  border-color: #007aff;
+  color: #ffffff;
+}
+
+body.theme-dark .pv-btn[data-active="true"] {
+  background: #0a84ff;
+  border-color: #0a84ff;
+}
+
+.pv-select {
+  border: 1px solid var(--pv-border);
+  background: var(--pv-chip);
+  color: var(--text-normal);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.pv-workbench {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.pv-main-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.pv-main-slot > .ciyu-ui {
+  flex: 1 1 auto;
+}
+
+.pv-sidebar-slot {
+  flex: 0 0 auto;
+  height: 100%;
+  border-left: 1px solid var(--pv-border);
+  display: flex;
+  flex-direction: column;
+  transition: width 160ms ease;
+}
+
+.pv-sidebar-slot > .ciyu-ui {
+  height: 100%;
+  width: 100%;
+}
+
+.pv-floating-popover {
+  position: fixed;
+  z-index: 65;
+}
+
+.pv-event-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 14px;
+  background: var(--pv-chrome);
+  border-top: 1px solid var(--pv-border);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.pv-event-log {
+  font-family: var(--font-monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

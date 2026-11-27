@@ -1,0 +1,214 @@
+.workspace-leaf-content[data-type="ciyu-study"] .ciyu-view-host,
+.workspace-leaf-content[data-type="ciyu-cet6-workspace"] .ciyu-view-host {
+  display: flex;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ciyu-view-host > .ciyu-sidebar,
+.ciyu-view-host > .ciyu-wide-study-shell {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 主工作区宽屏六级闭环学习容器 */
+.ciyu-ui.ciyu-wide-study-shell {
+  container-type: inline-size;
+  container-name: ciyu-root;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--ciyu-canvas-bg);
+  color: var(--ciyu-text-primary);
+  overflow: hidden;
+}
+
+.ciyu-ui .ciyu-wide-study-header {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--ciyu-border-subtle);
+  background: var(--ciyu-glass-bg);
+  backdrop-filter: blur(var(--ciyu-blur-md)) saturate(var(--ciyu-saturate));
+  -webkit-backdrop-filter: blur(var(--ciyu-blur-md)) saturate(var(--ciyu-saturate));
+}
+
+.ciyu-ui .ciyu-wide-study-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 28px;
+  max-width: 1160px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.ciyu-ui[hidden], .ciyu-ui [hidden] { display: none !important; }
+
+.ciyu-ui.ciyu-selection-host {
+  position: fixed;
+  z-index: 9998;
+  container-type: normal !important;
+  max-height: min(560px, calc(100vh - 16px));
+}
+
+/* 划词浮动双动胶囊按钮（左：翻译选中内容 ｜ 右：+ 生词 一键入库） */
+/* 必须覆盖 .ciyu-ui 的 container-type: inline-size，否则固定定位自适应宽度的胶囊会塌陷为 0px！ */
+.ciyu-ui.ciyu-selection-button {
+  position: fixed;
+  z-index: 9999;
+  container-type: normal !important;
+  display: inline-flex;
+  align-items: stretch;
+  width: auto !important;
+  min-width: max-content;
+  height: 32px;
+  padding: 0;
+  border-radius: 999px;
+  font-family: var(--ciyu-font-sans);
+  background: var(--ciyu-reading-bg-solid, #ffffff);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14), 0 1px 4px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.theme-dark .ciyu-ui.ciyu-selection-button {
+  background: var(--ciyu-reading-bg-solid, #2c2c2e);
+}
+
+.ciyu-ui .ciyu-selection-pill-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  margin: 0;
+  padding: 0 11px;
+  border-radius: 0 !important;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ciyu-accent-text);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.ciyu-ui .ciyu-selection-pill-action:hover {
+  background: var(--ciyu-accent-soft) !important;
+}
+
+.ciyu-ui .ciyu-selection-pill-action--add {
+  border-left: 1px solid var(--ciyu-border-subtle) !important;
+  color: var(--ciyu-text-primary);
+  padding: 0 10px;
+}
+
+.ciyu-ui .ciyu-selection-pill-action--add:hover {
+  color: var(--ciyu-accent-text);
+  background: var(--ciyu-accent-soft) !important;
+}
+
+.ciyu-ui.ciyu-selection-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--ciyu-accent-border);
+  box-shadow: var(--ciyu-specular-top), var(--ciyu-shadow-lg);
+}
+
+.ciyu-ui.ciyu-selection-button:active {
+  transform: scale(0.97);
+}
+
+/* 重绘：Obsidian 原生 Modal 承载容器（如删除模型确认等）统一为 Apple Sheet 风格 */
+.modal.ciyu-ui.ciyu-modal {
+  border-radius: 18px;
+  background: var(--ciyu-canvas-bg);
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-shadow-lg);
+  padding: 18px 20px;
+  color: var(--ciyu-text-primary);
+  font-family: var(--ciyu-font-sans);
+}
+
+.modal.ciyu-ui.ciyu-modal .modal-title {
+  font-size: 15.5px;
+  font-weight: 650;
+  color: var(--ciyu-text-primary);
+  margin-bottom: 10px;
+}
+
+.modal.ciyu-ui.ciyu-modal p {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ciyu-text-secondary);
+  margin: 0 0 10px;
+}
+
+.ciyu-ui.ciyu-settings-host { padding-block: 4px; }
+.ciyu-ui .ciyu-entry-form .ciyu-field { margin-block: 10px; }
+.ciyu-ui .ciyu-entry-form .ciyu-field textarea { width: 100%; resize: vertical; }
+.ciyu-ui .ciyu-entry-form .ciyu-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.ciyu-ui .ciyu-entry-form .ciyu-status:not(:empty) {
+  margin-block: 8px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  background: var(--ciyu-danger-soft);
+  color: var(--ciyu-danger);
+}
+
+.ciyu-ui .ciyu-model-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  gap: 6px;
+}
+.ciyu-ui .ciyu-model-name { overflow-wrap: anywhere; }
+.ciyu-ui .ciyu-speech-btn {
+  white-space: nowrap;
+}
+.ciyu-ui .ciyu-speech-btn[aria-pressed="true"] {
+  color: var(--ciyu-accent-text);
+  background: var(--ciyu-accent-soft);
+}
+
+/* Obsidian Notice 内嵌归档查重跳转按钮 */
+.ciyu-notice-jump-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.ciyu-notice-jump-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #ffffff !important;
+  background: #007aff !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+.ciyu-notice-jump-btn:hover {
+  background: #0066d6 !important;
+}

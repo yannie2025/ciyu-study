@@ -1,0 +1,274 @@
+/* ==========================================================================
+   词屿 (Ciyu) — Design Tokens & Material System
+   严格限定在 .ciyu-ui 作用域内，对接 Obsidian CSS 变量并提供完整独立降级。
+   参考：
+   - Apple HIG Materials (Liquid Glass)
+   - Obsidian CSS Variables (Foundations / Colors)
+   ========================================================================== */
+
+.ciyu-ui {
+  /* ---------- 字体系统（本地系统字体，零外部请求） ---------- */
+  --ciyu-font-sans: var(
+    --font-interface,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Noto Sans SC",
+    "Microsoft YaHei",
+    sans-serif
+  );
+  --ciyu-font-reading: var(
+    --font-text,
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "PingFang SC",
+    "Hiragino Sans GB",
+    "Microsoft YaHei",
+    sans-serif
+  );
+  --ciyu-font-mono: var(
+    --font-monospace,
+    "SF Mono",
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    monospace
+  );
+
+  /* ---------- 字号层级 ---------- */
+  --ciyu-text-xs: 11px;
+  --ciyu-text-sm: 12px;
+  --ciyu-text-base: 13.5px;
+  --ciyu-text-md: 15px;
+  --ciyu-text-lg: 19px;
+  --ciyu-text-xl: 22px;
+
+  /* ---------- 间距与圆角（Liquid Glass 圆润控件） ---------- */
+  --ciyu-space-1: 4px;
+  --ciyu-space-2: 8px;
+  --ciyu-space-3: 12px;
+  --ciyu-space-4: 16px;
+  --ciyu-space-5: 20px;
+
+  --ciyu-radius-xs: 8px;
+  --ciyu-radius-sm: 11px;
+  --ciyu-radius-md: 15px;
+  --ciyu-radius-lg: 20px;
+  --ciyu-radius-xl: 24px;
+  --ciyu-radius-pill: 999px;
+
+  /* ---------- 动效时长与曲线 ---------- */
+  --ciyu-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ciyu-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ciyu-dur-fast: 140ms;
+  --ciyu-dur-base: 220ms;
+  --ciyu-dur-slow: 320ms;
+
+  /* ---------- Apple 官方系统设置配色：System Blue 主点缀（浅色） ---------- */
+  --ciyu-accent: #007aff;
+  --ciyu-accent-hover: #0066d6;
+  --ciyu-accent-active: #0055b3;
+  --ciyu-accent-soft: rgba(0, 122, 255, 0.11);
+  --ciyu-accent-soft-strong: rgba(0, 122, 255, 0.18);
+  --ciyu-accent-border: rgba(0, 122, 255, 0.28);
+  --ciyu-accent-text: #0066d6;
+  --ciyu-on-accent: var(--text-on-accent, #ffffff);
+
+  /* ---------- Apple 系统语义色（浅色） ---------- */
+  --ciyu-switch-on: #34c759;
+  --ciyu-success: #248a3d;
+  --ciyu-success-soft: rgba(52, 199, 89, 0.14);
+  --ciyu-warning: #c96a00;
+  --ciyu-warning-soft: rgba(255, 149, 0, 0.14);
+  --ciyu-danger: #d70015;
+  --ciyu-danger-soft: rgba(255, 59, 48, 0.12);
+
+  /* ---------- 文本对比度（Apple Label / Secondary / Tertiary） ---------- */
+  --ciyu-text-primary: var(--text-normal, #1c1c1e);
+  --ciyu-text-secondary: var(--text-muted, #636366);
+  --ciyu-text-tertiary: var(--text-faint, #8e8e93);
+
+  /* ---------- 基底与稳定阅读面（Apple System Grouped Background · 清透浅色） ---------- */
+  --ciyu-canvas-bg: var(--background-secondary, #f2f2f7);
+  --ciyu-reading-bg: rgba(255, 255, 255, 0.8);
+  --ciyu-reading-bg-solid: var(--background-primary, #ffffff);
+  --ciyu-reading-subtle: rgba(118, 118, 128, 0.08);
+  --ciyu-input-bg: rgba(255, 255, 255, 0.56);
+
+  /* ---------- Liquid Glass 材质层（纯白清透光学玻璃） ---------- */
+  --ciyu-glass-bg: rgba(255, 255, 255, 0.48);
+  --ciyu-glass-bg-elevated: rgba(255, 255, 255, 0.6);
+  --ciyu-glass-bg-popover: rgba(252, 252, 254, 0.52);
+  --ciyu-glass-thumb-bg: rgba(255, 255, 255, 0.9);
+  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.09);
+  --ciyu-glass-pill-hover: rgba(118, 118, 128, 0.15);
+
+  --ciyu-glass-blur: 12px;
+  --ciyu-glass-blur-heavy: 16px;
+  --ciyu-glass-saturate: 190%;
+  --ciyu-glass-brightness: 1.03;
+
+  /* 边缘高光与极细中性分割线 */
+  --ciyu-border-subtle: var(--background-modifier-border, rgba(60, 60, 67, 0.11));
+  --ciyu-border-glass: rgba(255, 255, 255, 0.9);
+  --ciyu-border-outer: rgba(60, 60, 67, 0.12);
+  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.66);
+  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.045);
+  --ciyu-glass-sheen: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.46) 0%,
+    rgba(255, 255, 255, 0.08) 38%,
+    rgba(255, 255, 255, 0) 64%
+  );
+
+  /* 柔和分层阴影（中性无色偏） */
+  --ciyu-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.035);
+  --ciyu-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ciyu-shadow-md: 0 12px 28px rgba(0, 0, 0, 0.085), 0 2px 6px rgba(0, 0, 0, 0.04);
+  --ciyu-shadow-popover:
+    0 22px 52px rgba(0, 0, 0, 0.13),
+    0 6px 18px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.62);
+
+  /* 焦点环 */
+  --ciyu-focus-ring: 0 0 0 2px rgba(255, 255, 255, 0.92), 0 0 0 4px rgba(0, 122, 255, 0.48);
+
+  /* 边缘折射滤镜开关（由 glass.ts 注入 SVG filter 后启用） */
+  --ciyu-refraction-opacity: 1;
+}
+
+/* ==========================================================================
+   深色模式：Apple macOS / iOS 系统设置深色配色（纯中性炭灰 + System Blue/Green）
+   ========================================================================== */
+.theme-dark .ciyu-ui,
+.ciyu-ui.theme-dark,
+.ciyu-ui[data-theme="dark"] {
+  --ciyu-accent: #0a84ff;
+  --ciyu-accent-hover: #3299ff;
+  --ciyu-accent-active: #0070e0;
+  --ciyu-accent-soft: rgba(10, 132, 255, 0.18);
+  --ciyu-accent-soft-strong: rgba(10, 132, 255, 0.28);
+  --ciyu-accent-border: rgba(10, 132, 255, 0.4);
+  --ciyu-accent-text: #409cff;
+  --ciyu-on-accent: #ffffff;
+
+  --ciyu-switch-on: #30d158;
+  --ciyu-success: #30d158;
+  --ciyu-success-soft: rgba(48, 209, 88, 0.18);
+  --ciyu-warning: #ff9f0a;
+  --ciyu-warning-soft: rgba(255, 159, 10, 0.18);
+  --ciyu-danger: #ff453a;
+  --ciyu-danger-soft: rgba(255, 69, 58, 0.18);
+
+  --ciyu-text-primary: var(--text-normal, #f5f5f7);
+  --ciyu-text-secondary: var(--text-muted, #aeaeb2);
+  --ciyu-text-tertiary: var(--text-faint, #8e8e93);
+
+  --ciyu-canvas-bg: var(--background-secondary, #1c1c1e);
+  --ciyu-reading-bg: rgba(44, 44, 46, 0.72);
+  --ciyu-reading-bg-solid: var(--background-primary, #2c2c2e);
+  --ciyu-reading-subtle: rgba(118, 118, 128, 0.2);
+  --ciyu-input-bg: rgba(44, 44, 46, 0.52);
+
+  --ciyu-glass-bg: rgba(44, 44, 46, 0.48);
+  --ciyu-glass-bg-elevated: rgba(50, 50, 54, 0.58);
+  --ciyu-glass-bg-popover: rgba(36, 36, 38, 0.54);
+  --ciyu-glass-thumb-bg: rgba(99, 99, 102, 0.58);
+  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.22);
+  --ciyu-glass-pill-hover: rgba(118, 118, 128, 0.34);
+  --ciyu-glass-saturate: 185%;
+  --ciyu-glass-brightness: 1.06;
+
+  --ciyu-border-subtle: var(--background-modifier-border, rgba(255, 255, 255, 0.1));
+  --ciyu-border-glass: rgba(255, 255, 255, 0.2);
+  --ciyu-border-outer: rgba(255, 255, 255, 0.13);
+  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+  --ciyu-glass-sheen: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 38%,
+    rgba(255, 255, 255, 0) 64%
+  );
+
+  --ciyu-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24), 0 0 0 0.5px rgba(255, 255, 255, 0.04);
+  --ciyu-shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.32), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --ciyu-shadow-md: 0 12px 30px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.26);
+  --ciyu-shadow-popover:
+    0 24px 56px rgba(0, 0, 0, 0.54),
+    0 8px 20px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 255, 255, 0.12);
+
+  --ciyu-focus-ring: 0 0 0 2px rgba(28, 28, 30, 0.95), 0 0 0 4px rgba(10, 132, 255, 0.62);
+}
+
+/* ==========================================================================
+   降低透明度（系统偏好或设置页开关）
+   ========================================================================== */
+@media (prefers-reduced-transparency: reduce) {
+  .ciyu-ui {
+    --ciyu-glass-bg: var(--ciyu-reading-bg-solid);
+    --ciyu-glass-bg-elevated: var(--ciyu-reading-bg-solid);
+    --ciyu-glass-bg-popover: var(--ciyu-reading-bg-solid);
+    --ciyu-reading-bg: var(--ciyu-reading-bg-solid);
+    --ciyu-input-bg: var(--ciyu-reading-bg-solid);
+    --ciyu-glass-blur: 0px;
+    --ciyu-glass-blur-heavy: 0px;
+    --ciyu-glass-saturate: 100%;
+    --ciyu-glass-brightness: 1;
+    --ciyu-glass-sheen: none;
+    --ciyu-refraction-opacity: 0;
+  }
+}
+
+.ciyu-ui.ciyu-reduced-transparency,
+.ciyu-ui[data-reduced-transparency="true"] {
+  --ciyu-glass-bg: var(--ciyu-reading-bg-solid);
+  --ciyu-glass-bg-elevated: var(--ciyu-reading-bg-solid);
+  --ciyu-glass-bg-popover: var(--ciyu-reading-bg-solid);
+  --ciyu-reading-bg: var(--ciyu-reading-bg-solid);
+  --ciyu-input-bg: var(--ciyu-reading-bg-solid);
+  --ciyu-glass-blur: 0px;
+  --ciyu-glass-blur-heavy: 0px;
+  --ciyu-glass-saturate: 100%;
+  --ciyu-glass-brightness: 1;
+  --ciyu-glass-sheen: none;
+  --ciyu-refraction-opacity: 0;
+}
+
+.theme-dark .ciyu-ui.ciyu-reduced-transparency,
+.ciyu-ui.theme-dark.ciyu-reduced-transparency,
+.ciyu-ui[data-theme="dark"][data-reduced-transparency="true"] {
+  --ciyu-glass-bg: #2c2c2e;
+  --ciyu-glass-bg-elevated: #323236;
+  --ciyu-glass-bg-popover: #262629;
+  --ciyu-reading-bg: #2c2c2e;
+  --ciyu-input-bg: #2c2c2e;
+  --ciyu-glass-thumb-bg: #48484a;
+  --ciyu-glass-pill-bg: #3a3a3c;
+}
+
+/* ==========================================================================
+   减少动态效果（系统偏好或手动开关）
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .ciyu-ui {
+    --ciyu-dur-fast: 0ms;
+    --ciyu-dur-base: 0ms;
+    --ciyu-dur-slow: 0ms;
+  }
+}
+
+.ciyu-ui.ciyu-reduced-motion,
+.ciyu-ui[data-reduced-motion="true"] {
+  --ciyu-dur-fast: 0ms;
+  --ciyu-dur-base: 0ms;
+  --ciyu-dur-slow: 0ms;
+}

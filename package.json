@@ -1,0 +1,20 @@
+{
+  "name": "ciyu-study",
+  "version": "0.6.9",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.cjs",
+    "test": "node scripts/build.cjs && node --test",
+    "typecheck": "tsc --noEmit",
+    "preview:build": "node scripts/build-preview.cjs",
+    "preview": "node scripts/serve-preview.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "typescript": "5.9.3"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "ciyu-study",
+  "name": "Ciyu Study",
+  "version": "0.6.9",
+  "minAppVersion": "1.7.0",
+  "description": "在笔记里划词、搜词、插入翻译，并用独立生词本与六级听力精听安排复习。微信：y4_nnie",
+  "author": "y4_nnie",
+  "isDesktopOnly": true
+}
