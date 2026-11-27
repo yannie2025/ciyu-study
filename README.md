@@ -4,9 +4,28 @@
 
 ## 安装
 
+未安装 Obsidian 时，请先从 [Obsidian 官网](https://obsidian.md/download) 下载并安装桌面版，然后打开或创建一个笔记库。
+
+### 让 AI 助手安装
+
+把下面的提示词粘贴给有终端或电脑操作能力的 AI 助手。它会定位笔记库、下载完整插件包并核对启用结果。
+
+```text
+请帮我在当前电脑的 Obsidian 桌面端安装或更新「词屿」（Ciyu Study），请实际操作并核对结果。
+
+1. 检查操作系统和 Obsidian 是否已安装。如果已安装且满足插件的最低版本要求，就继续使用现有版本。否则先从 https://obsidian.md/download 下载对应系统的官方桌面安装包，完成安装或更新后打开 Obsidian。遇到系统必须由我确认的界面时，给我具体操作提示。
+2. 从 https://github.com/yannie2025/ciyu-study/releases/latest 下载最新正式发布里的 ciyu-study-plugin.zip。解压到临时目录，确认插件 ID 为 ciyu-study，并检查 manifest.json、main.js、styles.css 和 dictionaries/ 是否齐全。使用完整 ZIP 里的插件目录。
+3. 确定目标笔记库。使用 Obsidian 当前打开的库。若无法确认目标、同时打开多个库或需要新建库，请先让我指定目录。目标库使用自定义配置目录时，以实际配置目录为准。
+4. 将完整的 ciyu-study 目录放进目标库配置目录的 plugins/ 下，默认位置是 .obsidian/plugins/ciyu-study/。若已安装同版本，直接检查启用状态。若是更新，先备份旧插件目录再覆盖发布文件，保留 data.json。检测到已安装版本高于发布版本时保留较新版本。
+5. 在 Obsidian「设置 → 第三方插件」里刷新列表并启用 Ciyu Study。如果 Obsidian 弹出受限模式或信任提示，交给我确认。启用后打开词屿并用一个普通英文词验证离线查词。
+6. 告诉我安装版本、目标库、安装路径和启用结果。Ollama 只在我想使用 AI 翻译时再配置。遇到无法自动完成的步骤，请说明具体卡点和我需要做的操作。
+```
+
+### 手动安装
+
 1. 从 [GitHub Releases](https://github.com/yannie2025/ciyu-study/releases/latest) 下载 `ciyu-study-plugin.zip`。解压安装包，把其中的 `ciyu-study` 文件夹放进当前库的 `.obsidian/plugins/`。如果库使用自定义配置目录，把它放进该目录的 `plugins/`。
 2. 在 Obsidian 中打开「设置 → 第三方插件」。开启第三方插件，刷新列表后启用 **Ciyu Study**。
-3. 从 [Ollama 官方下载页](https://ollama.com/download) 安装并启动 Ollama。在「设置 → Ciyu Study」执行「检测」，在推荐模型旁点「下载」，最后点「运行测试」。默认模型是 [Qwen2.5 1.5B](https://ollama.com/library/qwen2.5:1.5b)，下载约 986 MB。已有本地模型可从列表切换，或者填写模型名称后下载。
+3. 如需 AI 翻译，从 [Ollama 官方下载页](https://ollama.com/download) 安装并启动 Ollama。在「设置 → Ciyu Study」执行「检测」，在推荐模型旁点「下载」，最后点「运行测试」。默认模型是 [Qwen2.5 1.5B](https://ollama.com/library/qwen2.5:1.5b)，下载约 986 MB。已有本地模型可从列表切换，或者填写模型名称后下载。
 4. 点左侧工具栏的翻译图标，或从命令面板打开「Ciyu Study: 搜词翻译」。
 
 使用源码时，进入项目目录运行 `npm ci` 和 `npm run build`。安装所需文件位于 `dist/ciyu-study/`。构建需要 Node.js 20 或更新版本，运行插件时无需 npm。macOS 源码构建还需要 Xcode Command Line Tools 来编译有道系统服务和 PDF 文字识别组件。发布 ZIP 包含离线词库和 macOS 辅助程序。
