@@ -170,14 +170,21 @@
     );
 }
 
-/* 稳定高对比正文阅读层（轻透柔雾，确保清晰耐读） */
+/* 稳定高对比正文阅读层（全局 Liquid Glass 柔雾玻璃卡片，清晰耐读且透底折射） */
 .ciyu-ui .ciyu-surface {
-  background: var(--ciyu-reading-bg);
-  border: 1px solid var(--ciyu-border-subtle);
+  background-color: var(--ciyu-reading-bg);
+  background-image: var(--ciyu-glass-sheen);
+  border: 1px solid var(--ciyu-border-glass);
   border-radius: var(--ciyu-radius-lg);
-  box-shadow: var(--ciyu-specular-top), var(--ciyu-shadow-xs);
-  backdrop-filter: blur(10px) saturate(140%);
-  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  box-shadow:
+    var(--ciyu-specular-top),
+    var(--ciyu-specular-rim),
+    var(--ciyu-specular-bottom),
+    var(--ciyu-shadow-sm);
+  backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
+    brightness(var(--ciyu-glass-brightness, 1));
+  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
+    brightness(var(--ciyu-glass-brightness, 1));
 }
 
 .ciyu-ui.ciyu-popover-shell .ciyu-surface {
@@ -251,36 +258,14 @@
   flex-direction: column;
   height: 100%;
   min-height: 0;
-  background:
-    radial-gradient(
-      110% 40% at 15% -6%,
-      rgba(255, 255, 255, 0.82) 0%,
-      rgba(255, 255, 255, 0) 64%
-    ),
-    radial-gradient(
-      85% 36% at 92% 10%,
-      rgba(0, 122, 255, 0.055) 0%,
-      rgba(0, 122, 255, 0) 60%
-    ),
-    var(--ciyu-canvas-bg);
+  background: var(--ciyu-canvas-bg);
   overflow: hidden;
 }
 
 .theme-dark .ciyu-ui.ciyu-sidebar,
 .ciyu-ui.theme-dark.ciyu-sidebar,
 .ciyu-ui[data-theme="dark"].ciyu-sidebar {
-  background:
-    radial-gradient(
-      110% 42% at 18% -8%,
-      rgba(255, 255, 255, 0.055) 0%,
-      rgba(255, 255, 255, 0) 62%
-    ),
-    radial-gradient(
-      85% 36% at 90% 10%,
-      rgba(10, 132, 255, 0.075) 0%,
-      rgba(10, 132, 255, 0) 60%
-    ),
-    var(--ciyu-canvas-bg);
+  background: var(--ciyu-canvas-bg);
 }
 
 .ciyu-ui.ciyu-reduced-transparency.ciyu-sidebar,
@@ -292,8 +277,25 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 12px 8px;
+  padding: 12px 12px 10px;
   flex-shrink: 0;
+  background-color: var(--ciyu-glass-bg);
+  background-image: var(--ciyu-glass-sheen);
+  border-bottom: 0.5px solid var(--ciyu-border-subtle);
+  box-shadow: var(--ciyu-specular-top), 0 4px 16px rgba(0, 0, 0, 0.035);
+  backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
+    brightness(var(--ciyu-glass-brightness, 1));
+  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
+    brightness(var(--ciyu-glass-brightness, 1));
+  z-index: 8;
+}
+
+.ciyu-ui.ciyu-reduced-transparency .ciyu-sidebar-header,
+.ciyu-ui[data-reduced-transparency="true"] .ciyu-sidebar-header {
+  background: var(--ciyu-canvas-bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .ciyu-ui .ciyu-brand-row {
@@ -2429,10 +2431,63 @@
   gap: 8px;
 }
 
+.ciyu-ui .ciyu-opacity-slider-wrap {
+  display: flex;
+  align-items: center;
+  padding: 10px 0 4px;
+}
+
 .ciyu-ui .ciyu-opacity-slider {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  display: block;
   width: 100%;
-  accent-color: var(--ciyu-accent);
+  height: 22px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
   cursor: pointer;
+}
+
+.ciyu-ui .ciyu-opacity-slider::-webkit-slider-runnable-track {
+  height: 4px !important;
+  border-radius: 999px;
+  border: none !important;
+  background: linear-gradient(
+    to right,
+    var(--ciyu-accent) 0%,
+    var(--ciyu-accent) var(--ciyu-slider-pct, 60%),
+    color-mix(in srgb, var(--ciyu-text-tertiary) 28%, transparent) var(--ciyu-slider-pct, 60%),
+    color-mix(in srgb, var(--ciyu-text-tertiary) 28%, transparent) 100%
+  ) !important;
+}
+
+.ciyu-ui .ciyu-opacity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  position: static !important;
+  top: 0 !important;
+  width: 18px !important;
+  height: 18px !important;
+  margin-top: -7px !important;
+  border-radius: 50%;
+  background: #ffffff !important;
+  border: 0.5px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22), 0 0.5px 1px rgba(0, 0, 0, 0.12) !important;
+  transform: none !important;
+  transition: transform 140ms var(--ciyu-ease-spring), box-shadow 140ms ease;
+}
+
+.ciyu-ui .ciyu-opacity-slider:active::-webkit-slider-thumb {
+  transform: scale(1.12) !important;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28) !important;
+}
+
+.ciyu-ui .ciyu-opacity-slider:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .ciyu-ui .ciyu-changelog-head {
@@ -2746,13 +2801,22 @@
 
 .ciyu-ui .ciyu-switch {
   position: relative;
-  width: 40px;
-  height: 24px;
+  width: 44px;
+  height: 26px !important;
+  min-height: 26px;
+  padding: 0 !important;
   border-radius: var(--ciyu-radius-pill);
-  background: var(--ciyu-border-subtle);
-  border: 1px solid var(--ciyu-border-outer);
+  background: rgba(120, 120, 128, 0.22);
+  border: none !important;
+  box-shadow: none !important;
   flex-shrink: 0;
-  transition: background var(--ciyu-dur-fast) ease, border-color var(--ciyu-dur-fast) ease;
+  cursor: pointer;
+  transition: background 200ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.ciyu-ui .ciyu-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .ciyu-ui .ciyu-switch::after {
@@ -2760,21 +2824,680 @@
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(15, 28, 46, 0.25);
-  transition: transform var(--ciyu-dur-base) var(--ciyu-ease-spring);
+  box-shadow: 0 2px 5px rgba(15, 28, 46, 0.2), 0 0.5px 1.5px rgba(15, 28, 46, 0.14);
+  transition:
+    transform 240ms cubic-bezier(0.32, 0.72, 0, 1),
+    width 180ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.ciyu-ui .ciyu-switch:active:not(:disabled)::after {
+  width: 26px;
 }
 
 .ciyu-ui .ciyu-switch[aria-checked="true"] {
   background: var(--ciyu-switch-on, #34c759);
-  border-color: var(--ciyu-switch-on, #34c759);
 }
 
 .ciyu-ui .ciyu-switch[aria-checked="true"]::after {
-  transform: translateX(16px);
+  transform: translateX(18px);
+}
+
+.ciyu-ui .ciyu-switch[aria-checked="true"]:active:not(:disabled)::after {
+  transform: translateX(14px);
+}
+
+/* ==========================================================================
+   Apple System Settings 风格设置中心（双栏 / Inset Grouped / Squircle）
+   ========================================================================== */
+
+.ciyu-ui .ciyu-apple-settings {
+  container-type: inline-size;
+  container-name: ciyu-settings;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ciyu-ui .ciyu-apple-narrow-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ciyu-ui .ciyu-apple-settings-shell {
+  display: block;
+}
+
+.ciyu-ui .ciyu-apple-settings-nav {
+  display: none;
+}
+
+.ciyu-ui .ciyu-apple-settings-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+/* 窄屏按顶部胶囊过滤分组 */
+.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="appearance"] > [data-apple-pane]:not([data-apple-pane="appearance"]),
+.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="speech"] > [data-apple-pane]:not([data-apple-pane="speech"]),
+.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="model"] > [data-apple-pane]:not([data-apple-pane="model"]),
+.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="vault"] > [data-apple-pane]:not([data-apple-pane="vault"]),
+.ciyu-ui .ciyu-apple-settings-detail[data-narrow-filter="about"] > [data-apple-pane]:not([data-apple-pane="about"]) {
+  display: none;
+}
+
+/* 宽屏（>= 560px）自动切换为 macOS 系统设置双栏 */
+@container ciyu-settings (min-width: 560px) {
+  .ciyu-ui .ciyu-apple-narrow-pills {
+    display: none;
+  }
+
+  .ciyu-ui .ciyu-apple-settings-shell {
+    display: grid;
+    grid-template-columns: 184px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .ciyu-ui .ciyu-apple-settings-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    position: sticky;
+    top: 8px;
+    padding: 8px;
+    border-radius: 22px;
+    background-color: var(--ciyu-glass-bg);
+    background-image: var(--ciyu-glass-sheen);
+    border: 1px solid var(--ciyu-border-glass);
+    box-shadow:
+      var(--ciyu-specular-top),
+      var(--ciyu-specular-rim),
+      var(--ciyu-specular-bottom),
+      0 10px 28px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
+      brightness(var(--ciyu-glass-brightness, 1));
+    -webkit-backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
+      brightness(var(--ciyu-glass-brightness, 1));
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .ciyu-ui.ciyu-reduced-transparency .ciyu-apple-settings-nav,
+  .ciyu-ui[data-reduced-transparency="true"] .ciyu-apple-settings-nav {
+    background: var(--ciyu-reading-bg-solid);
+    border-color: var(--ciyu-border-subtle);
+    box-shadow: var(--ciyu-shadow-xs);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .ciyu-ui .ciyu-apple-settings-detail > [data-apple-pane] {
+    display: none;
+  }
+
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="appearance"] > [data-apple-pane="appearance"],
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="speech"] > [data-apple-pane="speech"],
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="model"] > [data-apple-pane="model"],
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="vault"] > [data-apple-pane="vault"],
+  .ciyu-ui .ciyu-apple-settings-detail[data-active-cat="about"] > [data-apple-pane="about"] {
+    display: flex;
+  }
+}
+
+/* 左侧边栏悬浮液态玻璃透镜（与顶部 SegmentedNav 同款弹簧滑移 + 拖拽水滴折射） */
+.ciyu-ui .ciyu-apple-nav-lens {
+  position: absolute;
+  top: 0;
+  left: 8px;
+  right: 8px;
+  z-index: 1;
+  border-radius: 14px;
+  pointer-events: none;
+  will-change: transform, height;
+  background: var(--ciyu-glass-thumb-bg);
+  box-shadow:
+    var(--ciyu-specular-top),
+    0 2px 10px rgba(24, 46, 74, 0.09),
+    0 0 0 0.5px var(--ciyu-border-outer);
+  transition:
+    transform 360ms cubic-bezier(0.22, 1.2, 0.36, 1),
+    height 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ciyu-ui .ciyu-apple-settings-nav[data-gliding="true"] .ciyu-apple-nav-lens {
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
+    0 6px 18px rgba(0, 122, 255, 0.14),
+    0 0 0 0.5px var(--ciyu-accent-border);
+}
+
+.ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      115% 95% at 50% 18%,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.24) 55%,
+      rgba(255, 255, 255, 0.14) 100%
+    );
+  backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  -webkit-backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
+    inset 0 -1.5px 2px rgba(0, 122, 255, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
+    0 10px 24px rgba(15, 28, 48, 0.16),
+    0 2px 6px rgba(15, 28, 48, 0.08);
+  transition:
+    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.ciyu-ui.ciyu-refraction-enabled .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens {
+  backdrop-filter: blur(6px) saturate(210%) brightness(1.06) url(#ciyu-liquid-refract);
+  -webkit-backdrop-filter: blur(6px) saturate(210%) brightness(1.06);
+}
+
+.theme-dark .ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens,
+.ciyu-ui[data-theme="dark"] .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens {
+  background:
+    radial-gradient(
+      115% 95% at 50% 18%,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.09) 58%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
+    inset 0 -1.5px 2px rgba(10, 132, 255, 0.26),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
+    0 12px 28px rgba(0, 0, 0, 0.44);
+}
+
+.ciyu-ui .ciyu-apple-nav-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start !important;
+  gap: 9px;
+  width: 100%;
+  height: auto !important;
+  min-height: 38px;
+  padding: 6px 11px !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 14px;
+  background: transparent !important;
+  color: var(--ciyu-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: color 160ms ease, transform 160ms var(--ciyu-ease-spring);
+}
+
+.ciyu-ui .ciyu-apple-nav-item:hover {
+  color: var(--ciyu-text-primary);
+}
+
+.ciyu-ui .ciyu-apple-nav-item--active,
+.ciyu-ui .ciyu-apple-nav-item--active:hover,
+.ciyu-ui .ciyu-apple-nav-item[data-drag-hover="true"] {
+  background: transparent !important;
+  color: var(--ciyu-accent-text);
+  font-weight: 600;
+  box-shadow: none !important;
+}
+
+.ciyu-ui .ciyu-apple-nav-item--active .ciyu-squircle,
+.ciyu-ui .ciyu-apple-nav-item[data-drag-hover="true"] .ciyu-squircle {
+  transform: scale(1.04);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14), inset 0 0.5px 0 rgba(255, 255, 255, 0.4);
+}
+
+.ciyu-ui .ciyu-apple-nav-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ciyu-ui .ciyu-apple-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ciyu-ui .ciyu-apple-pane-title {
+  margin: 0 0 2px 4px;
+  font-size: 17px;
+  font-weight: 660;
+  letter-spacing: -0.015em;
+  color: var(--ciyu-text-primary);
+}
+
+/* Inset Grouped 分组容器：组标题在卡片外，全局 Liquid Glass 分组卡片内置细分割线 */
+.ciyu-ui .ciyu-apple-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ciyu-ui .ciyu-apple-group-header {
+  margin: 0;
+  padding: 0 12px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ciyu-text-secondary);
+}
+
+.ciyu-ui .ciyu-apple-group-card {
+  border-radius: 22px;
+  overflow: hidden;
+}
+
+.ciyu-ui.ciyu-settings-host,
+.ciyu-ui.ciyu-exam-workspace {
+  background: var(--ciyu-canvas-bg);
+}
+
+.ciyu-ui.ciyu-reduced-transparency.ciyu-settings-host,
+.ciyu-ui[data-reduced-transparency="true"].ciyu-settings-host,
+.ciyu-ui.ciyu-reduced-transparency.ciyu-exam-workspace,
+.ciyu-ui[data-reduced-transparency="true"].ciyu-exam-workspace {
+  background: var(--ciyu-canvas-bg);
+}
+
+.ciyu-ui .ciyu-apple-group-footer {
+  margin: 0;
+  padding: 6px 12px 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ciyu-text-tertiary);
+}
+
+.ciyu-ui .ciyu-apple-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  min-width: 0;
+}
+
+.ciyu-ui .ciyu-apple-row:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 13px;
+  right: 0;
+  bottom: 0;
+  height: 0.5px;
+  background: var(--ciyu-border-subtle);
+  pointer-events: none;
+}
+
+.ciyu-ui .ciyu-apple-row--with-icon:not(:last-child)::after {
+  left: 49px;
+}
+
+.ciyu-ui .ciyu-apple-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+}
+
+.ciyu-ui .ciyu-apple-row--clickable {
+  width: 100%;
+  height: auto !important;
+  min-height: 44px;
+  justify-content: space-between !important;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.ciyu-ui .ciyu-apple-row--clickable:hover {
+  background: color-mix(in srgb, var(--ciyu-text-primary) 4%, transparent);
+}
+
+.ciyu-ui .ciyu-apple-row-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.ciyu-ui .ciyu-apple-value {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ciyu-text-secondary);
+  flex-shrink: 0;
+}
+
+/* Apple 彩色圆角矩形（Squircle）图标底板 */
+.ciyu-ui .ciyu-squircle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  flex-shrink: 0;
+  color: #ffffff;
+  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+}
+
+.ciyu-ui .ciyu-squircle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ciyu-ui .ciyu-squircle--blue {
+  background: linear-gradient(180deg, #3294ff 0%, #007aff 100%);
+}
+
+.ciyu-ui .ciyu-squircle--cyan {
+  background: linear-gradient(180deg, #5ac8fa 0%, #32ade6 100%);
+}
+
+.ciyu-ui .ciyu-squircle--pink {
+  background: linear-gradient(180deg, #ff5c77 0%, #ff2d55 100%);
+}
+
+.ciyu-ui .ciyu-squircle--indigo {
+  background: linear-gradient(180deg, #7472ea 0%, #5856d6 100%);
+}
+
+.ciyu-ui .ciyu-squircle--purple {
+  background: linear-gradient(180deg, #c66de8 0%, #af52de 100%);
+}
+
+.ciyu-ui .ciyu-squircle--orange {
+  background: linear-gradient(180deg, #ffad33 0%, #ff9500 100%);
+}
+
+.ciyu-ui .ciyu-squircle--green {
+  background: linear-gradient(180deg, #4cd964 0%, #34c759 100%);
+}
+
+.ciyu-ui .ciyu-squircle--gray {
+  background: linear-gradient(180deg, #9c9ca3 0%, #7c7c84 100%);
+}
+
+/* iOS 27 悬浮液态玻璃分段控件（Segmented Control） */
+.ciyu-ui .ciyu-apple-segmented {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background-color: var(--ciyu-glass-pill-bg);
+  border: 0.5px solid var(--ciyu-border-outer);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.045);
+  backdrop-filter: blur(12px) saturate(190%);
+  -webkit-backdrop-filter: blur(12px) saturate(190%);
+  flex-shrink: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ciyu-ui .ciyu-apple-seg-lens {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  z-index: 1;
+  border-radius: 999px;
+  pointer-events: none;
+  will-change: transform, width;
+  background: var(--ciyu-glass-thumb-bg);
+  box-shadow:
+    var(--ciyu-specular-top),
+    0 2px 8px rgba(24, 46, 74, 0.1),
+    0 0 0 0.5px var(--ciyu-border-outer);
+  transition:
+    transform 340ms cubic-bezier(0.22, 1.2, 0.36, 1),
+    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ciyu-ui .ciyu-apple-segmented[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.ciyu-ui .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      115% 95% at 50% 18%,
+      rgba(255, 255, 255, 0.76) 0%,
+      rgba(255, 255, 255, 0.28) 58%,
+      rgba(255, 255, 255, 0.14) 100%
+    );
+  backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  -webkit-backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
+    inset 0 -1px 2px rgba(0, 122, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
+    0 8px 20px rgba(15, 28, 48, 0.15);
+  transition:
+    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.theme-dark .ciyu-ui .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens,
+.ciyu-ui[data-theme="dark"] .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens {
+  background:
+    radial-gradient(
+      115% 95% at 50% 18%,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.1) 58%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+  box-shadow:
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
+    inset 0 -1px 2px rgba(10, 132, 255, 0.24),
+    0 10px 24px rgba(0, 0, 0, 0.42);
+}
+
+.ciyu-ui .ciyu-apple-seg-btn {
+  position: relative;
+  z-index: 2;
+  height: auto !important;
+  min-height: 26px;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  color: var(--ciyu-text-secondary);
+  font-size: 12px;
+  font-weight: 550;
+  padding: 4px 12px !important;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 160ms ease;
+}
+
+.ciyu-ui .ciyu-apple-seg-btn:hover {
+  color: var(--ciyu-text-primary);
+}
+
+.ciyu-ui .ciyu-apple-seg-btn--active,
+.ciyu-ui .ciyu-apple-seg-btn[data-drag-hover="true"] {
+  color: var(--ciyu-accent-text);
+  font-weight: 600;
+}
+
+/* 迷你 macOS 窗口色板卡片 */
+.ciyu-ui .ciyu-apple-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(126px, 1fr));
+  gap: 10px;
+}
+
+.ciyu-ui .ciyu-apple-theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 7px;
+  width: 100%;
+  height: auto !important;
+  min-height: 0;
+  padding: 7px !important;
+  border-radius: 11px;
+  border: 1.5px solid transparent;
+  box-shadow: none !important;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 140ms ease, background 140ms ease, transform 120ms ease;
+}
+
+.ciyu-ui .ciyu-apple-theme-card:hover {
+  background: color-mix(in srgb, var(--ciyu-text-primary) 4%, transparent);
+}
+
+.ciyu-ui .ciyu-apple-theme-card--active {
+  border-color: var(--ciyu-accent);
+  background: var(--ciyu-accent-soft);
+}
+
+.ciyu-ui .ciyu-mini-win {
+  position: relative;
+  width: 100%;
+  height: 58px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  border: 0.5px solid rgba(128, 128, 128, 0.3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.ciyu-ui .ciyu-mini-win-top {
+  height: 15px;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.16);
+  border-bottom: 0.5px solid rgba(128, 128, 128, 0.18);
+}
+
+.ciyu-ui .ciyu-mini-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12);
+}
+
+.ciyu-ui .ciyu-mini-dot:nth-child(1) {
+  background: #ff5f57;
+}
+
+.ciyu-ui .ciyu-mini-dot:nth-child(2) {
+  background: #febc2e;
+}
+
+.ciyu-ui .ciyu-mini-dot:nth-child(3) {
+  background: #28c840;
+}
+
+.ciyu-ui .ciyu-mini-win-body {
+  flex: 1 1 auto;
+  padding: 6px;
+  display: flex;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.ciyu-ui .ciyu-mini-win-card {
+  flex: 1 1 auto;
+  border-radius: 5px;
+  padding: 5px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ciyu-ui .ciyu-mini-win-accent {
+  display: block;
+  width: 48%;
+  height: 4.5px;
+  border-radius: 999px;
+}
+
+.ciyu-ui .ciyu-mini-win-line {
+  display: block;
+  width: 76%;
+  height: 3px;
+  border-radius: 999px;
+  opacity: 0.24;
+}
+
+/* 关于词屿 Hero 行 */
+.ciyu-ui .ciyu-apple-about-hero {
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 13px;
+}
+
+.ciyu-ui .ciyu-apple-about-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #3294ff 0%, #007aff 60%, #5856d6 100%);
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 3px 10px rgba(0, 122, 255, 0.28), inset 0 0.5px 0 rgba(255, 255, 255, 0.35);
+}
+
+.ciyu-ui .ciyu-apple-about-name {
+  font-size: 14.5px;
+  font-weight: 660;
+  color: var(--ciyu-text-primary);
 }
 
 /* ==========================================================================

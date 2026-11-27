@@ -90,24 +90,28 @@ export function applyGlassPreferences(
   }
 
   const rawOpacity = typeof options.glassOpacity === 'number' && Number.isFinite(options.glassOpacity)
-    ? Math.max(20, Math.min(100, Math.round(options.glassOpacity)))
-    : 68;
+    ? Math.max(10, Math.min(100, Math.round(options.glassOpacity)))
+    : 42;
 
   applyColorTheme(root, options.colorTheme, options.customTheme);
 
-  // 在开启 Liquid Glass 时，按用户自定义的玻璃不透明度动态调节所有玻璃与卡片表面透底程度
+  // iOS 27 高通透 Liquid Glass：显著压低白底遮罩，让边栏、顶栏与所有卡片透出光感与层次
   if (glassEnabled) {
-    const elevatedPct = Math.min(98, rawOpacity + 12);
-    const readingPct = Math.min(98, rawOpacity + 18);
-    const stickyPct = Math.min(98, Math.max(76, rawOpacity + 24));
-    const blurPx = Math.round(8 + ((100 - rawOpacity) / 80) * 12);
-    root.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${rawOpacity}%, transparent)`);
+    const glassPct = Math.max(10, Math.min(96, Math.round(rawOpacity * 0.62)));
+    const elevatedPct = Math.max(16, Math.min(96, Math.round(rawOpacity * 0.78)));
+    const readingPct = Math.max(14, Math.min(96, Math.round(rawOpacity * 0.74)));
+    const stickyPct = Math.min(94, Math.max(46, Math.round(rawOpacity * 0.86)));
+    const blurPx = Math.round(14 + ((100 - rawOpacity) / 90) * 14);
+    const blurHeavyPx = Math.round(20 + ((100 - rawOpacity) / 90) * 16);
+    root.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${glassPct}%, transparent)`);
     root.style.setProperty('--ciyu-glass-bg-elevated', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${elevatedPct}%, transparent)`);
     root.style.setProperty('--ciyu-reading-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${readingPct}%, transparent)`);
     root.style.setProperty('--ciyu-sticky-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${stickyPct}%, transparent)`);
     root.style.setProperty('--ciyu-glass-blur', `${blurPx}px`);
+    root.style.setProperty('--ciyu-glass-blur-heavy', `${blurHeavyPx}px`);
   } else {
     root.style.removeProperty('--ciyu-glass-blur');
+    root.style.removeProperty('--ciyu-glass-blur-heavy');
     if (!options.colorTheme || options.colorTheme === 'system') {
       root.style.removeProperty('--ciyu-glass-bg');
       root.style.removeProperty('--ciyu-glass-bg-elevated');

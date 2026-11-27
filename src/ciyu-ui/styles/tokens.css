@@ -55,11 +55,11 @@
   --ciyu-space-4: 16px;
   --ciyu-space-5: 20px;
 
-  --ciyu-radius-xs: 8px;
-  --ciyu-radius-sm: 11px;
-  --ciyu-radius-md: 15px;
-  --ciyu-radius-lg: 20px;
-  --ciyu-radius-xl: 24px;
+  --ciyu-radius-xs: 10px;
+  --ciyu-radius-sm: 13px;
+  --ciyu-radius-md: 17px;
+  --ciyu-radius-lg: 22px;
+  --ciyu-radius-xl: 26px;
   --ciyu-radius-pill: 999px;
 
   /* ---------- 动效时长与曲线 ---------- */
@@ -93,38 +93,38 @@
   --ciyu-text-secondary: var(--text-muted, #636366);
   --ciyu-text-tertiary: var(--text-faint, #8e8e93);
 
-  /* ---------- 基底与稳定阅读面（Apple System Grouped Background · 清透浅色） ---------- */
-  --ciyu-canvas-bg: var(--background-secondary, #f2f2f7);
-  --ciyu-reading-bg: rgba(255, 255, 255, 0.8);
+  /* ---------- 基底与稳定阅读面（柔和护眼浅白底，无刺眼反光） ---------- */
+  --ciyu-canvas-bg: var(--background-secondary, #f6f6f8);
+  --ciyu-reading-bg: rgba(255, 255, 255, 0.78);
   --ciyu-reading-bg-solid: var(--background-primary, #ffffff);
-  --ciyu-reading-subtle: rgba(118, 118, 128, 0.08);
-  --ciyu-input-bg: rgba(255, 255, 255, 0.56);
+  --ciyu-reading-subtle: rgba(118, 118, 128, 0.06);
+  --ciyu-input-bg: rgba(255, 255, 255, 0.72);
 
-  /* ---------- Liquid Glass 材质层（纯白清透光学玻璃） ---------- */
-  --ciyu-glass-bg: rgba(255, 255, 255, 0.48);
-  --ciyu-glass-bg-elevated: rgba(255, 255, 255, 0.6);
-  --ciyu-glass-bg-popover: rgba(252, 252, 254, 0.52);
-  --ciyu-glass-thumb-bg: rgba(255, 255, 255, 0.9);
-  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.09);
-  --ciyu-glass-pill-hover: rgba(118, 118, 128, 0.15);
+  /* ---------- iOS 27 Liquid Glass 材质层（高通透光学水晶玻璃） ---------- */
+  --ciyu-glass-bg: rgba(255, 255, 255, 0.28);
+  --ciyu-glass-bg-elevated: rgba(255, 255, 255, 0.38);
+  --ciyu-glass-bg-popover: rgba(252, 252, 254, 0.42);
+  --ciyu-glass-thumb-bg: rgba(255, 255, 255, 0.78);
+  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.08);
+  --ciyu-glass-pill-hover: rgba(255, 255, 255, 0.34);
 
-  --ciyu-glass-blur: 12px;
-  --ciyu-glass-blur-heavy: 16px;
-  --ciyu-glass-saturate: 190%;
-  --ciyu-glass-brightness: 1.03;
+  --ciyu-glass-blur: 18px;
+  --ciyu-glass-blur-heavy: 26px;
+  --ciyu-glass-saturate: 215%;
+  --ciyu-glass-brightness: 1.04;
 
-  /* 边缘高光与极细中性分割线 */
-  --ciyu-border-subtle: var(--background-modifier-border, rgba(60, 60, 67, 0.11));
-  --ciyu-border-glass: rgba(255, 255, 255, 0.9);
-  --ciyu-border-outer: rgba(60, 60, 67, 0.12);
-  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.96);
-  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.66);
-  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.045);
+  /* 边缘高光与极细中性描边（在柔和浅白底上保持清晰层次） */
+  --ciyu-border-subtle: var(--background-modifier-border, rgba(60, 60, 67, 0.09));
+  --ciyu-border-glass: rgba(60, 60, 67, 0.08);
+  --ciyu-border-outer: rgba(60, 60, 67, 0.09);
+  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.88);
+  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.48);
+  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   --ciyu-glass-sheen: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.46) 0%,
-    rgba(255, 255, 255, 0.08) 38%,
-    rgba(255, 255, 255, 0) 64%
+    165deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.05) 32%,
+    rgba(255, 255, 255, 0) 60%
   );
 
   /* 柔和分层阴影（中性无色偏） */
@@ -170,32 +170,32 @@
   --ciyu-text-secondary: var(--text-muted, #aeaeb2);
   --ciyu-text-tertiary: var(--text-faint, #8e8e93);
 
-  --ciyu-canvas-bg: var(--background-secondary, #1c1c1e);
-  --ciyu-reading-bg: rgba(44, 44, 46, 0.72);
-  --ciyu-reading-bg-solid: var(--background-primary, #2c2c2e);
-  --ciyu-reading-subtle: rgba(118, 118, 128, 0.2);
-  --ciyu-input-bg: rgba(44, 44, 46, 0.52);
+  --ciyu-canvas-bg: var(--background-secondary, #14151a);
+  --ciyu-reading-bg: rgba(40, 42, 48, 0.36);
+  --ciyu-reading-bg-solid: var(--background-primary, #24252a);
+  --ciyu-reading-subtle: rgba(118, 118, 128, 0.18);
+  --ciyu-input-bg: rgba(44, 44, 48, 0.34);
 
-  --ciyu-glass-bg: rgba(44, 44, 46, 0.48);
-  --ciyu-glass-bg-elevated: rgba(50, 50, 54, 0.58);
-  --ciyu-glass-bg-popover: rgba(36, 36, 38, 0.54);
-  --ciyu-glass-thumb-bg: rgba(99, 99, 102, 0.58);
-  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.22);
-  --ciyu-glass-pill-hover: rgba(118, 118, 128, 0.34);
-  --ciyu-glass-saturate: 185%;
-  --ciyu-glass-brightness: 1.06;
+  --ciyu-glass-bg: rgba(36, 38, 44, 0.28);
+  --ciyu-glass-bg-elevated: rgba(46, 48, 56, 0.38);
+  --ciyu-glass-bg-popover: rgba(32, 34, 40, 0.46);
+  --ciyu-glass-thumb-bg: rgba(110, 112, 120, 0.44);
+  --ciyu-glass-pill-bg: rgba(118, 118, 128, 0.18);
+  --ciyu-glass-pill-hover: rgba(255, 255, 255, 0.12);
+  --ciyu-glass-saturate: 210%;
+  --ciyu-glass-brightness: 1.08;
 
   --ciyu-border-subtle: var(--background-modifier-border, rgba(255, 255, 255, 0.1));
-  --ciyu-border-glass: rgba(255, 255, 255, 0.2);
-  --ciyu-border-outer: rgba(255, 255, 255, 0.13);
-  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.34);
+  --ciyu-border-glass: rgba(255, 255, 255, 0.22);
+  --ciyu-border-outer: rgba(255, 255, 255, 0.14);
+  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --ciyu-specular-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  --ciyu-specular-bottom: inset 0 -1px 0 rgba(0, 0, 0, 0.32);
   --ciyu-glass-sheen: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 38%,
-    rgba(255, 255, 255, 0) 64%
+    165deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.03) 34%,
+    rgba(255, 255, 255, 0) 60%
   );
 
   --ciyu-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24), 0 0 0 0.5px rgba(255, 255, 255, 0.04);

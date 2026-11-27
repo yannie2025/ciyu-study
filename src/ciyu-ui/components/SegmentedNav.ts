@@ -137,6 +137,7 @@ export function createSegmentedNav(
   let isDragging = false;
   let activePointerId: number | null = null;
   let startX = 0;
+  let startY = 0;
   let lastX = 0;
   let hoveredIdx = -1;
   let settleRaf: number | null = null;
@@ -207,32 +208,16 @@ export function createSegmentedNav(
     }
   }
 
-  nav.addEventListener('pointerdown', (e: PointerEvent) => {
-    if (e.button !== 0) return;
-    pointerDown = true;
-    isDragging = false;
-    activePointerId = e.pointerId;
-    startX = e.clientX;
-    lastX = e.clientX;
-    hoveredIdx = -1;
-    try { nav.setPointerCapture(e.pointerId); } catch {}
-
-    // 长按 160ms（不移动）也进入液态玻璃水滴隆起态；快速单击则保持在原位置，松手后完整滑移
-    if (holdTimer) window.clearTimeout(holdTimer);
-    const downX = e.clientX;
-    holdTimer = window.setTimeout(() => {
-      holdTimer = null;
-      if (pointerDown && !isDragging) {
-        enterDragMode(downX);
-      }
-    }, 160);
-  });
-
-  nav.addEventListener('pointermove', (e: PointerEvent) => {
+  const onWinPointerMove = (e: PointerEvent) => {
     if (!pointerDown || activePointerId !== e.pointerId) return;
+    // 在窗口外松开鼠标后再移回时，buttons 变为 0，立即完成吸附切换
+    if (e.pointerType === 'mouse' && e.buttons === 0) {
+      finishPointer(e, true);
+      return;
+    }
     const vx = e.clientX - lastX;
     lastX = e.clientX;
-    if (!isDragging && Math.abs(e.clientX - startX) > 5) {
+    if (!isDragging && Math.hypot(e.clientX - startX, e.clientY - startY) > 5) {
       if (holdTimer) {
         window.clearTimeout(holdTimer);
         holdTimer = null;
@@ -247,10 +232,69 @@ export function createSegmentedNav(
       if (!isDragging) return;
       updateDragLens(cx, vx);
     });
+  };
+
+  const onWinPointerUp = (e: PointerEvent) => finishPointer(e, true);
+  const onWinPointerCancel = (e: PointerEvent) => finishPointer(e, false);
+  const onWinBlur = () => {
+    if (!pointerDown) return;
+    const commitIdx = hoveredIdx >= 0 ? hoveredIdx : indexFromClientX(lastX);
+    detachGlobalPointerListeners();
+    pointerDown = false;
+    isDragging = false;
+    activePointerId = null;
+    if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
+    if (settleRaf) { cancelAnimationFrame(settleRaf); settleRaf = null; }
+    delete nav.dataset.dragging;
+    buttons.forEach((btn) => delete btn.dataset.dragHover);
+    hoveredIdx = -1;
+    positionLensToIndex(commitIdx, false);
+    const targetItem = NAV_ITEMS[commitIdx];
+    if (targetItem && targetItem.id !== props.activeTab) {
+      callbacks.onTabChange?.(targetItem.id);
+    }
+  };
+
+  function attachGlobalPointerListeners(): void {
+    window.addEventListener('pointermove', onWinPointerMove, true);
+    window.addEventListener('pointerup', onWinPointerUp, true);
+    window.addEventListener('pointercancel', onWinPointerCancel, true);
+    window.addEventListener('blur', onWinBlur);
+  }
+
+  function detachGlobalPointerListeners(): void {
+    window.removeEventListener('pointermove', onWinPointerMove, true);
+    window.removeEventListener('pointerup', onWinPointerUp, true);
+    window.removeEventListener('pointercancel', onWinPointerCancel, true);
+    window.removeEventListener('blur', onWinBlur);
+  }
+
+  nav.addEventListener('pointerdown', (e: PointerEvent) => {
+    if (e.button !== 0) return;
+    pointerDown = true;
+    isDragging = false;
+    activePointerId = e.pointerId;
+    startX = e.clientX;
+    startY = e.clientY;
+    lastX = e.clientX;
+    hoveredIdx = -1;
+    try { nav.setPointerCapture(e.pointerId); } catch {}
+    attachGlobalPointerListeners();
+
+    // 长按 160ms（不移动）也进入液态玻璃水滴隆起态；快速单击则保持在原位置，松手后完整滑移
+    if (holdTimer) window.clearTimeout(holdTimer);
+    const downX = e.clientX;
+    holdTimer = window.setTimeout(() => {
+      holdTimer = null;
+      if (pointerDown && !isDragging) {
+        enterDragMode(downX);
+      }
+    }, 160);
   });
 
   const finishPointer = (e: PointerEvent, commit: boolean) => {
     if (!pointerDown || activePointerId !== e.pointerId) return;
+    detachGlobalPointerListeners();
     const wasDragging = isDragging;
     pointerDown = false;
     isDragging = false;
@@ -286,9 +330,6 @@ export function createSegmentedNav(
       callbacks.onTabChange?.(targetItem.id);
     }
   };
-
-  nav.addEventListener('pointerup', (e: PointerEvent) => finishPointer(e, true));
-  nav.addEventListener('pointercancel', (e: PointerEvent) => finishPointer(e, false));
 
   // 键盘回车或辅助工具直接触发 click 时仍正常带滑移动画切换
   buttons.forEach((btn, i) => {
@@ -330,6 +371,7 @@ export function createSegmentedNav(
       syncSelection(false);
     },
     destroy() {
+      detachGlobalPointerListeners();
       if (holdTimer) window.clearTimeout(holdTimer);
       if (glideTimer) window.clearTimeout(glideTimer);
       if (settleRaf) cancelAnimationFrame(settleRaf);
