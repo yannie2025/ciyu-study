@@ -21,10 +21,10 @@
 只有聊天功能的网页对话可以用这段提示词生成操作指导。要让助手完成安装，请选能访问本机文件的会话。安装流程已用 GitHub 发布的 ZIP 在 macOS 临时库核对过，包括解压、更新时保留 `data.json` 和离线查词。豆包工作和 DeepSeek Harness 的能力已按文档核对，实际安装流程由 Codex 验证。若助手无权操作 Obsidian 界面，可以在文件安装后手动启用插件。
 
 ```text
-请帮我在当前电脑的 Obsidian 桌面端安装或更新「词屿」（Ciyu Study），请实际操作并核对结果。
+请帮我在当前电脑的 Obsidian 桌面端安装或更新「词屿」（Ciyu Study），请实际操作并核对结果。 默认安装或更新到 GitHub 最新正式版。
 
 1. 检查操作系统和 Obsidian 是否已安装。如果已安装且满足插件的最低版本要求，就继续使用现有版本。否则先从 https://obsidian.md/download 下载对应系统的官方桌面安装包，完成安装或更新后打开 Obsidian。遇到系统必须由我确认的界面时，给我具体操作提示。
-2. 从 https://github.com/yannie2025/ciyu-study/releases/latest 下载最新正式发布里的 ciyu-study-plugin.zip。解压到临时目录，确认插件 ID 为 ciyu-study，并检查 manifest.json、main.js、styles.css 和 dictionaries/ 是否齐全。使用完整 ZIP 里的插件目录。
+2. 每次执行时打开 https://github.com/yannie2025/ciyu-study/releases/latest，读取当前正式版的发布标签。通过 https://github.com/yannie2025/ciyu-study/releases/latest/download/ciyu-study-plugin.zip 下载完整安装包。如果直链失败，就从该发布页的 Assets 下载同名 ZIP。解压到临时目录，确认插件 ID 为 ciyu-study，manifest.json 的版本与发布标签一致（比较时忽略标签开头的 v），并检查 main.js、styles.css 和 dictionaries/ 是否齐全。若最新发布没有完整 ZIP，请说明情况，不要自行改装旧版。
 3. 确定目标笔记库。使用 Obsidian 当前打开的库。若无法确认目标、同时打开多个库或需要新建库，请先让我指定目录。目标库使用自定义配置目录时，以实际配置目录为准。
 4. 将完整的 ciyu-study 目录放进目标库配置目录的 plugins/ 下，默认位置是 .obsidian/plugins/ciyu-study/。若已安装同版本，直接检查启用状态。若是更新，先备份旧插件目录再覆盖发布文件，保留 data.json。检测到已安装版本高于发布版本时保留较新版本。
 5. 在 Obsidian「设置 → 第三方插件」里刷新列表并启用 Ciyu Study。如果 Obsidian 弹出受限模式或信任提示，交给我确认。启用后打开词屿并用一个普通英文词验证离线查词。
