@@ -1,8 +1,31 @@
 const {
-  Plugin, ItemView, Modal, Notice, PluginSettingTab, Setting, FuzzySuggestModal,
+  Plugin, ItemView, Modal, Notice: ObsidianNotice, PluginSettingTab, Setting, FuzzySuggestModal,
   MarkdownView, TFile, TFolder, normalizePath, loadPdfJs, requestUrl,
 } = require('obsidian');
 const { randomUUID } = require('crypto');
+
+class Notice {
+  constructor(message, duration) {
+    const ui = typeof CiyuUI !== 'undefined' ? CiyuUI : null;
+    if (typeof document !== 'undefined' && document.body && ui?.showCiyuToast) {
+      const handle = ui.showCiyuToast(String(message ?? ''), { duration });
+      if (handle) {
+        this._handle = handle;
+        return;
+      }
+    }
+    this._fallback = new ObsidianNotice(message, duration);
+  }
+  hide() {
+    this._handle?.hide();
+    this._fallback?.hide?.();
+  }
+  setMessage(message) {
+    this._handle?.setMessage(String(message ?? ''));
+    this._fallback?.setMessage?.(message);
+    return this;
+  }
+}
 
 const VIEW = 'ciyu-study';
 const MAX_SELECTION = 1000;
@@ -160,6 +183,7 @@ module.exports = class CiyuPlugin extends Plugin {
     this.cet6Controller?.destroy();
     this.vocabImporter?.destroy();
     for (const modal of this.entryModals || []) modal.close();
+    if (typeof CiyuUI !== 'undefined') CiyuUI?.destroyCiyuToasts?.();
     document.getElementById('ciyu-liquid-glass-defs')?.remove();
     this.app.workspace.detachLeavesOfType(VIEW);
     this.app.workspace.detachLeavesOfType(CET6_WIDE_VIEW);

@@ -1,5 +1,6 @@
 import { el } from '../dom';
 import { createIcon } from '../icons';
+import { attachLiquidLens } from './LiquidSegmented';
 import type {
   Cet6AudioAvailability,
   Cet6PaperStatus,
@@ -386,21 +387,33 @@ export function createExamWorkspaceView(
     header.append(left, right);
     host.appendChild(header);
 
-    // 2. 卷首可跳转目录（Sticky TOC）
+    // 2. 卷首可跳转目录（Sticky TOC · 悬浮液态玻璃透镜）
     const toc = el('nav', 'ciyu-glass ciyu-glass-refract ciyu-paper-jumper');
     toc.setAttribute('aria-label', '卷首分节目录');
-    for (const item of TOC_ITEMS) {
+    const tocBtns: HTMLButtonElement[] = [];
+    let activeTocIdx = 0;
+    TOC_ITEMS.forEach((item, idx) => {
       const active = props.activeSection === item.id;
+      if (active) activeTocIdx = idx;
       const btn = el('button', 'ciyu-jump-btn', item.label);
       btn.type = 'button';
       btn.setAttribute('aria-current', String(active));
-      btn.addEventListener('click', () => {
-        callbacks.onJumpSection?.(item.id);
-        const target = host.querySelector<HTMLElement>(`[data-paper-section="${item.id}"]`);
-        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
+      tocBtns.push(btn);
       toc.appendChild(btn);
-    }
+    });
+    attachLiquidLens({
+      container: toc,
+      buttons: tocBtns,
+      activeIndex: activeTocIdx,
+      cacheKey: 'cet6-paper-jumper',
+      onSelect: (idx) => {
+        const picked = TOC_ITEMS[idx];
+        if (!picked) return;
+        callbacks.onJumpSection?.(picked.id);
+        const target = host.querySelector<HTMLElement>(`[data-paper-section="${picked.id}"]`);
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      },
+    });
     host.appendChild(toc);
 
     // 交卷自动判分与批量错题收集栏

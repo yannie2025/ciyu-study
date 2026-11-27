@@ -1,10 +1,8 @@
 /**
- * 轻量级液态玻璃边缘折射 SVG 滤镜注入器
- * 灵感源自 MIT 协议开源项目 librecosta/liquid-glass 的 SVG feDisplacementMap 折射思路。
- * 特点：
- * - 仅在支持 Chromium/Electron SVG backdrop-filter 的环境中启用轻微光学折射；
- * - 严格保持低位移幅度（scale=6），仅用于壳层边缘质感，绝不干扰正文阅读；
- * - 在降低透明度或不支持环境中自动安全退化。
+ * Liquid Glass 视觉材质与无障碍偏好控制器
+ * 纯 CSS 光学高光、饱和磨砂与棱镜色散描边方案：
+ * - 避免 Chromium/Electron 在 backdrop-filter: url(#svg-filter) 中因 feImage 尺寸不匹配或越界采样产生的坏图；
+ * - 100% 适配任意宽高比容器（顶栏、侧边栏、分段器与卡片），在「降低透明度」模式自动安全退化。
  */
 
 import { applyColorTheme } from './themes';
@@ -13,48 +11,9 @@ import type { CiyuColorThemeId, CiyuCustomThemeColors } from './types';
 const FILTER_SVG_ID = 'ciyu-liquid-glass-defs';
 
 export function ensureLiquidGlassFilter(doc: Document = document): void {
-  if (doc.getElementById(FILTER_SVG_ID)) return;
-
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = doc.createElementNS(ns, 'svg');
-  svg.setAttribute('id', FILTER_SVG_ID);
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('width', '0');
-  svg.setAttribute('height', '0');
-  svg.style.position = 'fixed';
-  svg.style.pointerEvents = 'none';
-  svg.style.opacity = '0';
-
-  svg.innerHTML = `
-    <defs>
-      <filter
-        id="ciyu-liquid-refract"
-        x="-12%"
-        y="-12%"
-        width="124%"
-        height="124%"
-        color-interpolation-filters="sRGB"
-      >
-        <feTurbulence
-          type="fractalNoise"
-          baseFrequency="0.008 0.012"
-          numOctaves="2"
-          seed="7"
-          result="glassNoise"
-        />
-        <feGaussianBlur in="glassNoise" stdDeviation="7" result="softLens" />
-        <feDisplacementMap
-          in="SourceGraphic"
-          in2="softLens"
-          scale="6"
-          xChannelSelector="R"
-          yChannelSelector="G"
-        />
-      </filter>
-    </defs>
-  `;
-
-  doc.body.appendChild(svg);
+  // 清理旧版本残留的 SVG 位移滤镜节点，防止产生坏图
+  const legacy = doc.getElementById(FILTER_SVG_ID);
+  if (legacy) legacy.remove();
 }
 
 /**
@@ -85,7 +44,7 @@ export function applyGlassPreferences(
 
   const enableRefraction = glassEnabled && options.edgeRefraction;
   root.classList.toggle('ciyu-refraction-enabled', enableRefraction);
-  if (enableRefraction && root.ownerDocument) {
+  if (glassEnabled && root.ownerDocument) {
     ensureLiquidGlassFilter(root.ownerDocument);
   }
 
@@ -101,8 +60,8 @@ export function applyGlassPreferences(
     const elevatedPct = Math.max(16, Math.min(96, Math.round(rawOpacity * 0.78)));
     const readingPct = Math.max(14, Math.min(96, Math.round(rawOpacity * 0.74)));
     const stickyPct = Math.min(94, Math.max(46, Math.round(rawOpacity * 0.86)));
-    const blurPx = Math.round(14 + ((100 - rawOpacity) / 90) * 14);
-    const blurHeavyPx = Math.round(20 + ((100 - rawOpacity) / 90) * 16);
+    const blurPx = Math.round(8 + ((100 - rawOpacity) / 90) * 6);
+    const blurHeavyPx = Math.round(11 + ((100 - rawOpacity) / 90) * 7);
     root.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${glassPct}%, transparent)`);
     root.style.setProperty('--ciyu-glass-bg-elevated', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${elevatedPct}%, transparent)`);
     root.style.setProperty('--ciyu-reading-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${readingPct}%, transparent)`);

@@ -150,16 +150,44 @@ function createAppleSegmented<T extends string>(
   let lastX = 0;
   let hoveredIdx = activeIdx;
   let holdTimer: number | null = null;
+  let dragRaf: number | null = null;
   let downIdx = activeIdx;
+  let cachedRect: DOMRect | null = null;
+  let cachedBtns: Array<{ left: number; width: number; center: number }> = [];
+
+  function cacheGeometry(): void {
+    cachedRect = wrap.getBoundingClientRect();
+    cachedBtns = buttons.map((b) => ({
+      left: b.offsetLeft,
+      width: b.offsetWidth,
+      center: b.offsetLeft + b.offsetWidth / 2,
+    }));
+  }
+
+  function indexFromClientXCached(clientX: number): number {
+    const rect = cachedRect ?? wrap.getBoundingClientRect();
+    if (rect.width <= 0 || cachedBtns.length === 0) return indexFromClientX(clientX);
+    const rel = Math.max(0, Math.min(rect.width - 1, clientX - rect.left));
+    let best = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < cachedBtns.length; i++) {
+      const d = Math.abs(rel - cachedBtns[i].center);
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    }
+    return best;
+  }
 
   function updateDragLens(clientX: number, vx: number): void {
-    const rect = wrap.getBoundingClientRect();
-    const refBtn = buttons[hoveredIdx] ?? buttons[0];
-    if (!refBtn || rect.width <= 0) return;
-    const lensW = refBtn.offsetWidth;
-    const minLeft = buttons[0]?.offsetLeft ?? 3;
-    const lastBtn = buttons[buttons.length - 1];
-    const maxLeft = lastBtn ? lastBtn.offsetLeft : Math.max(minLeft, rect.width - lensW - 3);
+    const rect = cachedRect ?? wrap.getBoundingClientRect();
+    const ref = cachedBtns[hoveredIdx] ?? cachedBtns[0];
+    if (!ref || rect.width <= 0) return;
+    const lensW = ref.width;
+    const minLeft = cachedBtns[0]?.left ?? 3;
+    const lastBtn = cachedBtns[cachedBtns.length - 1];
+    const maxLeft = lastBtn ? lastBtn.left : Math.max(minLeft, rect.width - lensW - 3);
     let rawLeft = clientX - rect.left - lensW / 2;
     if (rawLeft < minLeft) rawLeft = minLeft - Math.min(6, (minLeft - rawLeft) * 0.2);
     else if (rawLeft > maxLeft) rawLeft = maxLeft + Math.min(6, (rawLeft - maxLeft) * 0.2);
@@ -170,7 +198,7 @@ function createAppleSegmented<T extends string>(
     lens.style.width = `${lensW}px`;
     lens.style.transform = `translate3d(${rawLeft.toFixed(1)}px, 0, 0) scale(${sx.toFixed(3)}, ${sy.toFixed(3)})`;
 
-    const idx = indexFromClientX(clientX);
+    const idx = indexFromClientXCached(clientX);
     if (idx !== hoveredIdx) {
       hoveredIdx = idx;
       buttons.forEach((b, i) => {
@@ -184,7 +212,7 @@ function createAppleSegmented<T extends string>(
     if (isDragging) return;
     isDragging = true;
     wrap.dataset.dragging = 'true';
-    hoveredIdx = indexFromClientX(clientX);
+    hoveredIdx = indexFromClientXCached(clientX);
     updateDragLens(clientX, 0);
   }
 
@@ -200,7 +228,14 @@ function createAppleSegmented<T extends string>(
       if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
       enterDrag(e.clientX);
     }
-    if (isDragging) updateDragLens(e.clientX, vx);
+    if (isDragging) {
+      if (dragRaf) cancelAnimationFrame(dragRaf);
+      const cx = e.clientX;
+      dragRaf = requestAnimationFrame(() => {
+        dragRaf = null;
+        if (isDragging) updateDragLens(cx, vx);
+      });
+    }
   };
 
   const onWinUp = (e: PointerEvent) => finishPointer(e, true);
@@ -223,6 +258,7 @@ function createAppleSegmented<T extends string>(
     detachWin();
     pointerDown = false;
     if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
+    if (dragRaf) { cancelAnimationFrame(dragRaf); dragRaf = null; }
     try {
       if (wrap.hasPointerCapture?.(e.pointerId)) wrap.releasePointerCapture(e.pointerId);
     } catch {}
@@ -231,7 +267,8 @@ function createAppleSegmented<T extends string>(
     delete wrap.dataset.dragging;
     buttons.forEach((b) => delete b.dataset.dragHover);
 
-    const targetIdx = commit ? (wasDrag ? indexFromClientX(e.clientX) : downIdx) : activeIdx;
+    const targetIdx = commit ? (wasDrag ? indexFromClientXCached(e.clientX) : downIdx) : activeIdx;
+    cachedRect = null;
     positionLens(targetIdx, false);
     if (commit && targetIdx !== activeIdx && options[targetIdx]) {
       onSelect(options[targetIdx].id);
@@ -240,13 +277,14 @@ function createAppleSegmented<T extends string>(
 
   wrap.addEventListener('pointerdown', (e) => {
     if (e.button !== 0) return;
+    cacheGeometry();
     pointerDown = true;
     isDragging = false;
     activePointerId = e.pointerId;
     startX = e.clientX;
     startY = e.clientY;
     lastX = e.clientX;
-    downIdx = indexFromClientX(e.clientX);
+    downIdx = indexFromClientXCached(e.clientX);
     hoveredIdx = downIdx;
     try { wrap.setPointerCapture(e.pointerId); } catch {}
     attachWin();
@@ -445,7 +483,7 @@ export function createSettingsView(
       sideNav.appendChild(itemBtn);
     }
 
-    // 左侧边栏交互：单击弹簧纵移 + 长按/上下拖拽液态水滴折射 + 全局 window 追踪防丢事件
+    // 左侧边栏交互：单击弹簧纵移 + 长按/上下拖拽液态水滴折射 + 缓存几何尺寸与 rAF 合帧防卡顿
     let pointerActive = false;
     let isDragging = false;
     let activePointerId = -1;
@@ -455,33 +493,51 @@ export function createSettingsView(
     let lastTime = 0;
     let hoveredIdx = categories.findIndex((c) => c.id === activeCategory);
     let holdTimer: number | null = null;
+    let navDragRaf: number | null = null;
     let downCatId: AppleSettingsCategory | null = null;
+    let cachedNavRect: DOMRect | null = null;
+    let cachedNavBtns: Array<{ top: number; height: number; center: number }> = [];
+
+    function cacheNavGeometry(): void {
+      cachedNavRect = sideNav.getBoundingClientRect();
+      cachedNavBtns = navButtons.map((b) => ({
+        top: b.offsetTop,
+        height: b.offsetHeight,
+        center: b.offsetTop + b.offsetHeight / 2,
+      }));
+    }
 
     function indexFromClientY(clientY: number): number {
-      const rect = sideNav.getBoundingClientRect();
+      const rect = cachedNavRect ?? sideNav.getBoundingClientRect();
       if (rect.height <= 0 || navButtons.length === 0) return 0;
       const rel = Math.max(0, Math.min(rect.height - 1, clientY - rect.top));
+      const list = cachedNavBtns.length === navButtons.length
+        ? cachedNavBtns
+        : navButtons.map((b) => ({
+            top: b.offsetTop,
+            height: b.offsetHeight,
+            center: b.offsetTop + b.offsetHeight / 2,
+          }));
       let best = 0;
       let bestDist = Infinity;
-      navButtons.forEach((b, i) => {
-        const center = b.offsetTop + b.offsetHeight / 2;
-        const d = Math.abs(rel - center);
+      for (let i = 0; i < list.length; i++) {
+        const d = Math.abs(rel - list[i].center);
         if (d < bestDist) {
           bestDist = d;
           best = i;
         }
-      });
+      }
       return best;
     }
 
     function updateNavDragLens(clientY: number, velocityY: number): void {
-      const rect = sideNav.getBoundingClientRect();
-      const refBtn = navButtons[hoveredIdx] ?? navButtons[0];
-      if (!refBtn || rect.height <= 0) return;
-      const lensH = refBtn.offsetHeight;
-      const minY = navButtons[0]?.offsetTop ?? 8;
-      const lastBtn = navButtons[navButtons.length - 1];
-      const maxY = lastBtn ? lastBtn.offsetTop : Math.max(minY, rect.height - lensH - 8);
+      const rect = cachedNavRect ?? sideNav.getBoundingClientRect();
+      const ref = cachedNavBtns[hoveredIdx] ?? cachedNavBtns[0];
+      if (!ref || rect.height <= 0) return;
+      const lensH = ref.height;
+      const minY = cachedNavBtns[0]?.top ?? 8;
+      const lastBtn = cachedNavBtns[cachedNavBtns.length - 1];
+      const maxY = lastBtn ? lastBtn.top : Math.max(minY, rect.height - lensH - 8);
       let rawY = clientY - rect.top - lensH / 2;
       if (rawY < minY) rawY = minY - Math.min(10, (minY - rawY) * 0.18);
       else if (rawY > maxY) rawY = maxY + Math.min(10, (rawY - maxY) * 0.18);
@@ -526,7 +582,14 @@ export function createSettingsView(
         if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
         enterNavDrag(e.clientY);
       }
-      if (isDragging) updateNavDragLens(e.clientY, vel);
+      if (isDragging) {
+        if (navDragRaf) cancelAnimationFrame(navDragRaf);
+        const cy = e.clientY;
+        navDragRaf = requestAnimationFrame(() => {
+          navDragRaf = null;
+          if (isDragging) updateNavDragLens(cy, vel);
+        });
+      }
     };
 
     const onNavWinUp = (e: PointerEvent) => finishNavPointer(e, false);
@@ -536,10 +599,12 @@ export function createSettingsView(
       detachNavWinListeners();
       pointerActive = false;
       if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
+      if (navDragRaf) { cancelAnimationFrame(navDragRaf); navDragRaf = null; }
       const wasDrag = isDragging;
       isDragging = false;
       delete sideNav.dataset.dragging;
       const targetIdx = wasDrag ? indexFromClientY(lastY) : categories.findIndex((c) => c.id === activeCategory);
+      cachedNavRect = null;
       selectCategory(categories[targetIdx]?.id ?? activeCategory, true);
       downCatId = null;
     };
@@ -560,6 +625,7 @@ export function createSettingsView(
 
     sideNav.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      cacheNavGeometry();
       const hitBtn = (e.target as HTMLElement | null)?.closest<HTMLButtonElement>('.ciyu-apple-nav-item');
       downCatId = (hitBtn?.dataset.catId as AppleSettingsCategory | undefined) ?? null;
       pointerActive = true;
@@ -582,6 +648,7 @@ export function createSettingsView(
       detachNavWinListeners();
       pointerActive = false;
       if (holdTimer) { window.clearTimeout(holdTimer); holdTimer = null; }
+      if (navDragRaf) { cancelAnimationFrame(navDragRaf); navDragRaf = null; }
       try {
         if (sideNav.hasPointerCapture?.(e.pointerId)) sideNav.releasePointerCapture(e.pointerId);
       } catch {}
@@ -589,10 +656,14 @@ export function createSettingsView(
         isDragging = false;
         delete sideNav.dataset.dragging;
         const releaseIdx = indexFromClientY(e.clientY);
+        cachedNavRect = null;
         const target = !cancelled ? categories[releaseIdx]?.id : activeCategory;
         selectCategory(target ?? activeCategory, true);
       } else if (!cancelled && downCatId) {
+        cachedNavRect = null;
         selectCategory(downCatId, true);
+      } else {
+        cachedNavRect = null;
       }
       downCatId = null;
     };
@@ -668,12 +739,6 @@ export function createSettingsView(
       winPreview.style.background = isSys
         ? 'linear-gradient(135deg, #f2f2f7 50%, #1c1c1e 50%)'
         : canvasHex;
-      const winTop = el('div', 'ciyu-mini-win-top');
-      winTop.append(
-        el('span', 'ciyu-mini-dot'),
-        el('span', 'ciyu-mini-dot'),
-        el('span', 'ciyu-mini-dot')
-      );
       const winBody = el('div', 'ciyu-mini-win-body');
       const winCard = el('div', 'ciyu-mini-win-card');
       winCard.style.background = surfHex;
@@ -683,7 +748,7 @@ export function createSettingsView(
       winLine.style.background = textHex;
       winCard.append(winBar, winLine);
       winBody.appendChild(winCard);
-      winPreview.append(winTop, winBody);
+      winPreview.appendChild(winBody);
 
       const meta = el('div', 'ciyu-theme-meta');
       meta.append(
@@ -851,8 +916,8 @@ export function createSettingsView(
         const elevatedPct = Math.max(16, Math.min(96, Math.round(pct * 0.78)));
         const readingPct = Math.max(14, Math.min(96, Math.round(pct * 0.74)));
         const stickyPct = Math.min(94, Math.max(46, Math.round(pct * 0.86)));
-        const blurPx = Math.round(14 + ((100 - pct) / 90) * 14);
-        const blurHeavyPx = Math.round(20 + ((100 - pct) / 90) * 16);
+        const blurPx = Math.round(8 + ((100 - pct) / 90) * 6);
+        const blurHeavyPx = Math.round(11 + ((100 - pct) / 90) * 7);
         host.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${glassPct}%, transparent)`);
         host.style.setProperty('--ciyu-glass-bg-elevated', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${elevatedPct}%, transparent)`);
         host.style.setProperty('--ciyu-reading-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${readingPct}%, transparent)`);
@@ -869,9 +934,11 @@ export function createSettingsView(
 
     const quickRow = el('div', 'ciyu-theme-actions');
     for (const p of [
-      { label: '水晶 24%', val: 24 },
-      { label: 'iOS 27 42%', val: 42 },
-      { label: '柔雾 72%', val: 72 },
+      { label: '极透 24%', val: 24 },
+      { label: '清透 42%', val: 42 },
+      { label: '默认 58%', val: 58 },
+      { label: '柔和 76%', val: 76 },
+      { label: '实色 94%', val: 94 },
     ]) {
       const qBtn = el(
         'button',
@@ -997,11 +1064,13 @@ export function createSettingsView(
       el('span', 'ciyu-toggle-title', '试听效果'),
       (() => {
         const btns = el('div', 'ciyu-theme-actions');
-        const previewWordBtn = el('button', 'ciyu-mini-btn', '🔊 resilience');
+        const previewWordBtn = el('button', 'ciyu-mini-btn');
         previewWordBtn.type = 'button';
+        previewWordBtn.append(createIcon('volume-2', 'sm'), el('span', undefined, 'resilience'));
         previewWordBtn.addEventListener('click', () => callbacks.onPreviewSpeech?.('resilience'));
-        const previewSentBtn = el('button', 'ciyu-mini-btn', '🔊 英文整句');
+        const previewSentBtn = el('button', 'ciyu-mini-btn');
         previewSentBtn.type = 'button';
+        previewSentBtn.append(createIcon('volume-2', 'sm'), el('span', undefined, '英文整句'));
         previewSentBtn.addEventListener('click', () =>
           callbacks.onPreviewSpeech?.('They have helped boost the local economy.')
         );

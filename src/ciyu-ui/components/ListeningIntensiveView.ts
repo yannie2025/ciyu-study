@@ -1,5 +1,6 @@
 import { el } from '../dom';
 import { createIcon } from '../icons';
+import { attachLiquidLens } from './LiquidSegmented';
 import type {
   ExamChoiceQuestion,
   ListeningIntensiveCallbacks,
@@ -472,11 +473,14 @@ export function createListeningIntensiveView(
       root.appendChild(linkStrip);
     }
 
-    // 2. Section A / B / C 切换 + 题组片段选择（带精确起止时间戳如 00:33–02:45）
+    // 2. Section A / B / C 切换 + 题组片段选择（带精确起止时间戳如 00:33–02:45，统一 iOS 27 悬浮液态玻璃透镜）
     const secTabs = el('div', 'ciyu-glass ciyu-section-tabs');
     secTabs.setAttribute('role', 'tablist');
-    for (const sec of SECTION_META) {
+    const secBtns: HTMLButtonElement[] = [];
+    let activeSecIdx = 0;
+    SECTION_META.forEach((sec, idx) => {
       const selected = props.activeSection === sec.id;
+      if (selected) activeSecIdx = idx;
       const secGroups = props.groups.filter((g) => g.section === sec.id);
       const secQuestions = secGroups.flatMap((g) => g.questions);
       const secAnswered = secQuestions.filter((q) => Boolean(q.selectedKey)).length;
@@ -496,11 +500,21 @@ export function createListeningIntensiveView(
         el('span', undefined, sec.title),
         el('small', undefined, rangeStr ? `${sec.subtitle} · ${rangeStr}` : sec.subtitle)
       );
-      btn.addEventListener('click', () => {
-        if (!selected) callbacks.onChangeSection?.(sec.id);
-      });
+      secBtns.push(btn);
       secTabs.appendChild(btn);
-    }
+    });
+    attachLiquidLens({
+      container: secTabs,
+      buttons: secBtns,
+      activeIndex: activeSecIdx,
+      cacheKey: 'cet6-listening-sections',
+      onSelect: (idx) => {
+        const picked = SECTION_META[idx];
+        if (picked && picked.id !== props.activeSection) {
+          callbacks.onChangeSection?.(picked.id);
+        }
+      },
+    });
     root.appendChild(secTabs);
 
     const sectionGroups = props.groups.filter((g) => g.section === props.activeSection);
@@ -1134,13 +1148,29 @@ export function createListeningIntensiveView(
       { id: 'en', label: '英文对照' },
       { id: 'bilingual', label: '中英对照' },
     ];
-    for (const m of modes) {
+    const modeBtns: HTMLButtonElement[] = [];
+    let activeModeIdx = 0;
+    modes.forEach((m, idx) => {
+      const isCurrent = props.transcriptMode === m.id;
+      if (isCurrent) activeModeIdx = idx;
       const mBtn = el('button', 'ciyu-mode-btn', m.label);
       mBtn.type = 'button';
-      mBtn.setAttribute('aria-pressed', String(props.transcriptMode === m.id));
-      mBtn.addEventListener('click', () => callbacks.onChangeTranscriptMode?.(m.id));
+      mBtn.setAttribute('aria-pressed', String(isCurrent));
+      modeBtns.push(mBtn);
       modeSwitch.appendChild(mBtn);
-    }
+    });
+    attachLiquidLens({
+      container: modeSwitch,
+      buttons: modeBtns,
+      activeIndex: activeModeIdx,
+      cacheKey: 'cet6-listening-transcript-mode',
+      onSelect: (idx) => {
+        const picked = modes[idx];
+        if (picked && picked.id !== props.transcriptMode) {
+          callbacks.onChangeTranscriptMode?.(picked.id);
+        }
+      },
+    });
     modeHeader.append(modeTitleWrap, modeSwitch);
 
     const sourceMeta = el('div', 'ciyu-source-meta-bar');

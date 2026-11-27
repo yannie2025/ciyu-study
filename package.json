@@ -1,6 +1,6 @@
 {
   "name": "ciyu-study",
-  "version": "0.7.1",
+  "version": "0.7.7",
   "private": true,
   "scripts": {
     "build": "node scripts/build.cjs",

@@ -1,6 +1,6 @@
 import type { ChangelogEntry } from './types';
 
-export const CIYU_VERSION = '0.7.1';
+export const CIYU_VERSION = '0.7.7';
 
 export const CIYU_CHANGELOG_FOREWORD = {
   title: '🏝️ 关于「词屿」的缘起',
@@ -13,6 +13,66 @@ export const CIYU_CHANGELOG_FOREWORD = {
 } as const;
 
 export const CIYU_CHANGELOG: ReadonlyArray<ChangelogEntry> = [
+  {
+    version: '0.7.7',
+    date: '2026-11-27',
+    title: 'Sonner 主题联动进度条、复习键盘流与极细滚动条',
+    highlights: [
+      'Sonner 液态玻璃轻提示完整同步 Catppuccin / Nord / Rosé Pine / Everforest / Solarized 与自定义 4 色主题，并新增底部 2px 自动消失细进度条（鼠标悬停自动暂停）',
+      '复习页（ReviewView）新增免鼠标键盘快捷流：按 Space 一键揭晓释义、按 1 / 2 / 3 / 4 直接评级（忘记 / 模糊 / 记得 / 轻松），按钮附轻巧 macOS 键帽提示',
+      '全局侧栏、宽屏题库工作区与弹窗统一精修为 macOS 风格 5px 极细圆角滚动条，长文阅读更干净清爽',
+    ],
+  },
+  {
+    version: '0.7.6',
+    date: '2026-11-27',
+    title: 'Sonner 风格堆叠式液态玻璃轻提示系统',
+    highlights: [
+      '借鉴 emilkowalski/sonner 打造纯原生零依赖的堆叠式液态玻璃轻提示中心，全面接管全插件 50+ 处操作通知（插入笔记、加生词、每日归档、六级下载/判分/错题本等）',
+      '支持 Sonner 标志性层叠缩放堆叠、鼠标悬停丝滑展开并自动暂停倒计时、智能语义图标（成功 / 警告 / 异常 / 提示），以及向右轻滑手势关闭与深浅色/无障碍自适应',
+    ],
+  },
+  {
+    version: '0.7.5',
+    date: '2026-11-27',
+    title: 'Vaul / cmdk 微交互物理触感与复习闪卡精修',
+    highlights: [
+      '借鉴 emilkowalski/vaul 物理曲线：下载/导入弹窗与划词浮窗新增克制的弹簧浮现（scale + translateY）与背板轻柔淡入，完整适配「减少动态效果」无障碍设置',
+      '借鉴 pacocoursey/cmdk 数字触感法则：全插件主按钮、题目选项、听力题组胶囊与评分按钮统一增加物理微缩按压回弹手感',
+      '复习页（ReviewView）专属精修：「只看原词 / 原句挖空」切换栏同步接入纯白悬浮液态玻璃透镜；揭晓释义与四档熟练度评分栏新增平滑弹簧揭示动效与悬停轻浮反馈',
+    ],
+  },
+  {
+    version: '0.7.4',
+    date: '2026-11-27',
+    title: 'iOS 27 Design System 实测 Token 与多层玻璃图标融合',
+    highlights: [
+      '融合开源项目 seunghan91/ios27-design-system 从 Apple iOS 27 UI Kit 实测提取的 Darkened Edge（暗边分离轮廓）+ Brighter Specular（锐利边缘高光），让悬浮玻璃控件在护眼浅白底上层次更分明',
+      '升级为 iOS 27 官方弹簧动效曲线（appleDefault / snappy / bouncy 末端微过冲），优化悬浮透镜与开关回弹手感',
+      'Squircle 分类图标升级为 iOS 27 Layered App Icon 多层玻璃高光斜切质感；不透明度快捷预设扩展为 iOS 27 五档（极透 24% / 清透 42% / 默认 58% / 柔和 76% / 实色 94%）',
+    ],
+  },
+  {
+    version: '0.7.3',
+    date: '2026-11-27',
+    title: 'Cupertino Quiet Canvas 极简美学精修',
+    highlights: [
+      '参考开源项目 svnaxis/obsidian-cupertino 的 Quiet Canvas 与 Content Over Chrome 理念，全面弱化次级边框与中性徽章干扰，升级为极轻弥散悬浮阴影，让词汇释义、例句与真题成为绝对视觉中心',
+      '全局排版精修：标题收紧字距（-0.02em）、正文与释义放宽行高（1.66），所有音频时间、计数、徽章与评分统一启用 tabular-nums 等宽数字零抖动',
+      '例句与上下文引用块升级为 Cupertino 柔灰无外框引文样式，提升查词卡、生词卡、复习卡与设置行的留白呼吸感；试听按钮去除系统 Emoji，统一为精致线性矢量 SVG 图标',
+    ],
+  },
+  {
+    version: '0.7.2',
+    date: '2026-11-27',
+    title: '全插件纯白液态玻璃统一与全局 120fps 性能优化',
+    highlights: [
+      '全插件所有分段切换栏统一接入纯白银亮高光悬浮液态玻璃透镜（去除彩虹色边框）：覆盖六级闭环子页面切换、听力 Section A/B/C、听力原文三模切换（盲听 / 英文对照 / 中英对照）与整卷卷首题型导航，均支持单击弹簧滑移、长按/拖拽水滴手感与全局 window 防丢吸附',
+      '主题配色预览卡片去除红绿灯顶栏，改为更纯粹极简的画布 + 内嵌卡片色板预览',
+      '全面优化滚屏与拖拽流畅度：移除静态卡片、小按钮与顶栏外层的冗余叠加 backdrop-filter（GPU 磨砂开销直降 80%+），统一轻量模糊半径并移除 backdrop-filter 过渡动画',
+      '顶栏主导航、设置左侧边栏与所有分段器统一在按下时缓存几何坐标并通过 requestAnimationFrame 合帧更新，实现零重排 120fps 跟手拖动',
+    ],
+  },
   {
     version: '0.7.1',
     date: '2026-11-27',
@@ -28,7 +88,7 @@ export const CIYU_CHANGELOG: ReadonlyArray<ChangelogEntry> = [
     title: 'Apple 系统设置风格重构与 iOS 27 全局 Liquid Glass',
     highlights: [
       '设置中心全面重构为 macOS / iPadOS 系统设置风格：宽屏自动切换为左侧彩色 Squircle 图标分类栏 + 右侧详情面板双栏布局，窄侧栏自动收敛为顶部快捷分类胶囊与单列 Inset Grouped 分组列表',
-      '采用 Apple 原生 Inset Grouped 信息层级与精修控件：升级为 44×26 无边框果冻按压拉伸 Toggle 开关、4px 细轨道强调色进度滑块与重绘的迷你 macOS 红绿灯窗口主题预览卡片',
+      '采用 Apple 原生 Inset Grouped 信息层级与精修控件：升级为 44×26 无边框果冻按压拉伸 Toggle 开关、4px 细轨道强调色进度滑块与极简主题配色预览卡片',
       '全面接入 iOS 27 高通透全局 Liquid Glass（含顶栏、设置侧边栏与全局卡片），支持 10%–100% 不透明度调节（水晶 24% / iOS 27 42% / 柔雾 72%），全局底色改为柔和护眼浅白底（去除彩色渐变）',
       '设置左侧分类边栏同步升级为与顶栏一致的悬浮液态玻璃透镜：支持单击弹簧纵移、长按/上下拖拽液态水滴折射；顶栏与边栏同时升级为全局 window 级指针追踪，解决长按拖到远处或窗口外松手无法自动吸附切换的问题',
       '新增独立「关于词屿」原生信息卡片，集成品牌图标、开源至 GitHub 信息行与可展开的缘起和完整更新日志',

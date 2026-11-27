@@ -154,6 +154,17 @@ export function createSegmentedNav(
     }, 360);
   }
 
+  let cachedNavRect: DOMRect | null = null;
+  let cachedBtnRects: Array<{ left: number; width: number }> = [];
+
+  function cacheNavGeometry(): void {
+    cachedNavRect = nav.getBoundingClientRect();
+    cachedBtnRects = buttons.map((b) => {
+      const r = b.getBoundingClientRect();
+      return { left: r.left - cachedNavRect!.left, width: r.width };
+    });
+  }
+
   function enterDragMode(clientX: number): void {
     if (isDragging) return;
     isDragging = true;
@@ -163,7 +174,7 @@ export function createSegmentedNav(
   }
 
   function indexFromClientX(clientX: number): number {
-    const navRect = nav.getBoundingClientRect();
+    const navRect = cachedNavRect ?? nav.getBoundingClientRect();
     if (navRect.width <= 0) return activeIndex();
     const rel = Math.max(0, Math.min(navRect.width - 1, clientX - navRect.left));
     const idx = Math.floor((rel / navRect.width) * NAV_ITEMS.length);
@@ -171,13 +182,14 @@ export function createSegmentedNav(
   }
 
   function updateDragLens(clientX: number, velocityX: number): void {
-    const navRect = nav.getBoundingClientRect();
+    const navRect = cachedNavRect ?? nav.getBoundingClientRect();
     if (navRect.width <= 0) return;
-    const firstBtn = buttons[0];
     const pad = 3;
-    const lensW = firstBtn ? firstBtn.getBoundingClientRect().width : (navRect.width - pad * 2) / NAV_ITEMS.length;
-    const minLeft = pad;
-    const maxLeft = Math.max(minLeft, navRect.width - lensW - pad);
+    const firstCached = cachedBtnRects[0];
+    const lensW = firstCached ? firstCached.width : (navRect.width - pad * 2) / NAV_ITEMS.length;
+    const minLeft = firstCached ? firstCached.left : pad;
+    const lastCached = cachedBtnRects[cachedBtnRects.length - 1];
+    const maxLeft = lastCached ? lastCached.left : Math.max(minLeft, navRect.width - lensW - pad);
     const rawLeft = clientX - navRect.left - lensW / 2;
 
     // 边缘橡皮筋弹性阻尼
@@ -271,6 +283,7 @@ export function createSegmentedNav(
 
   nav.addEventListener('pointerdown', (e: PointerEvent) => {
     if (e.button !== 0) return;
+    cacheNavGeometry();
     pointerDown = true;
     isDragging = false;
     activePointerId = e.pointerId;
@@ -314,6 +327,8 @@ export function createSegmentedNav(
 
     const prevIdx = activeIndex();
     const targetIdx = commit ? indexFromClientX(e.clientX) : prevIdx;
+    cachedNavRect = null;
+    cachedBtnRects = [];
     buttons.forEach((btn) => delete btn.dataset.dragHover);
     hoveredIdx = -1;
 

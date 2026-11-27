@@ -1,5 +1,6 @@
 import { appendClozeSentence, appendHighlightedText, el } from '../dom';
 import { speechButton } from './LookupTools';
+import { attachLiquidLens } from './LiquidSegmented';
 import { createIcon } from '../icons';
 import type {
   ReviewRating,
@@ -136,14 +137,22 @@ export function createReviewView(
     const wordModeBtn = el('button', 'ciyu-mode-btn', '只看原词');
     wordModeBtn.type = 'button';
     wordModeBtn.setAttribute('aria-pressed', String(props.mode === 'word'));
-    wordModeBtn.addEventListener('click', () => callbacks.onChangeMode?.('word'));
 
     const clozeModeBtn = el('button', 'ciyu-mode-btn', '原句挖空');
     clozeModeBtn.type = 'button';
     clozeModeBtn.setAttribute('aria-pressed', String(props.mode === 'cloze'));
-    clozeModeBtn.addEventListener('click', () => callbacks.onChangeMode?.('cloze'));
 
     modeSwitch.append(wordModeBtn, clozeModeBtn);
+    attachLiquidLens({
+      container: modeSwitch,
+      buttons: [wordModeBtn, clozeModeBtn],
+      activeIndex: props.mode === 'cloze' ? 1 : 0,
+      cacheKey: 'ciyu-review-mode',
+      onSelect: (idx) => {
+        const nextMode = idx === 1 ? 'cloze' : 'word';
+        if (nextMode !== props.mode) callbacks.onChangeMode?.(nextMode);
+      },
+    });
 
     const progressLabel = el(
       'span',
@@ -220,7 +229,11 @@ export function createReviewView(
       const revealBtn = el('button', 'ciyu-btn ciyu-btn--primary');
       revealBtn.type = 'button';
       revealBtn.style.width = '100%';
-      revealBtn.append(createIcon('eye', 'sm'), el('span', undefined, '揭晓释义'));
+      revealBtn.append(
+        createIcon('eye', 'sm'),
+        el('span', undefined, '揭晓释义'),
+        el('kbd', 'ciyu-kbd', 'Space')
+      );
       revealBtn.addEventListener('click', () => callbacks.onReveal?.());
       revealWrap.appendChild(revealBtn);
       flashcard.appendChild(revealWrap);
@@ -270,19 +283,50 @@ export function createReviewView(
       ratingBar.setAttribute('role', 'toolbar');
       ratingBar.setAttribute('aria-label', '选择记忆熟悉度');
 
-      for (const cfg of RATING_CONFIG) {
+      RATING_CONFIG.forEach((cfg, idx) => {
         const btn = el('button', cfg.className);
         btn.type = 'button';
-        btn.append(
-          el('span', 'ciyu-rate-label', cfg.label),
-          el('span', 'ciyu-rate-hint', cardData.intervals[cfg.key])
-        );
+        const top = el('span', 'ciyu-rate-head');
+        top.append(el('span', 'ciyu-rate-label', cfg.label), el('kbd', 'ciyu-kbd', String(idx + 1)));
+        btn.append(top, el('span', 'ciyu-rate-hint', cardData.intervals[cfg.key]));
         btn.addEventListener('click', () => callbacks.onRate?.(cardData.id, cfg.key));
         ratingBar.appendChild(btn);
-      }
+      });
 
       root.appendChild(ratingBar);
     }
+  }
+
+  // 键盘快捷复习：Space 揭晓释义，1–4 快速评分（仅在复习页可见且焦点不在输入框时生效）
+  const onReviewKeydown = (e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (!root.isConnected || root.hidden || root.offsetParent === null) return;
+    if (props.status !== 'active' || !props.currentCard) return;
+    const activeEl = root.ownerDocument?.activeElement as HTMLElement | null;
+    if (
+      activeEl &&
+      (activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.tagName === 'SELECT' ||
+        activeEl.isContentEditable)
+    ) {
+      return;
+    }
+    if (!props.revealed && (e.code === 'Space' || e.key === ' ')) {
+      e.preventDefault();
+      callbacks.onReveal?.();
+      return;
+    }
+    if (props.revealed && ['1', '2', '3', '4'].includes(e.key)) {
+      const cfg = RATING_CONFIG[Number(e.key) - 1];
+      if (cfg) {
+        e.preventDefault();
+        callbacks.onRate?.(props.currentCard.id, cfg.key);
+      }
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', onReviewKeydown);
   }
 
   render();
@@ -294,6 +338,9 @@ export function createReviewView(
       render();
     },
     destroy() {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('keydown', onReviewKeydown);
+      }
       root.remove();
     },
   };

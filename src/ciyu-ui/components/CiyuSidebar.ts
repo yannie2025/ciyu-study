@@ -11,6 +11,7 @@ import type {
 import { createArchiveView } from './ArchiveView';
 import { createExamBankView } from './ExamBankView';
 import { createExamWorkspaceView } from './ExamWorkspaceView';
+import { attachLiquidLens } from './LiquidSegmented';
 import { createListeningIntensiveView } from './ListeningIntensiveView';
 import { createLookupView } from './LookupView';
 import { createMistakeBookView } from './MistakeBookView';
@@ -327,17 +328,33 @@ export function createCiyuSidebar(
           label: mistakeTotal > 0 ? `错题本 (${mistakeTotal})` : '错题本',
         },
       ];
-      for (const it of items) {
+      const track = el('div', 'ciyu-exam-subnav-track');
+      const subBtns: HTMLButtonElement[] = [];
+      let activeSubIdx = 0;
+      items.forEach((it, idx) => {
+        const isCurrent = subView === it.id;
+        if (isCurrent) activeSubIdx = idx;
         const btn = el(
           'button',
-          subView === it.id ? 'ciyu-mini-btn ciyu-mini-btn--accent' : 'ciyu-mini-btn',
+          isCurrent ? 'ciyu-exam-subnav-btn ciyu-exam-subnav-btn--active' : 'ciyu-exam-subnav-btn',
           it.label
         );
         btn.type = 'button';
-        btn.setAttribute('aria-current', String(subView === it.id));
-        btn.addEventListener('click', () => callbacks.onExamSubViewChange?.(it.id));
-        examSubNav.appendChild(btn);
-      }
+        btn.setAttribute('aria-current', String(isCurrent));
+        subBtns.push(btn);
+        track.appendChild(btn);
+      });
+      attachLiquidLens({
+        container: track,
+        buttons: subBtns,
+        activeIndex: activeSubIdx,
+        cacheKey: 'cet6-exam-subnav',
+        onSelect: (idx) => {
+          const picked = items[idx];
+          if (picked) callbacks.onExamSubViewChange?.(picked.id);
+        },
+      });
+      examSubNav.appendChild(track);
     }
 
     if (props.examBank) {

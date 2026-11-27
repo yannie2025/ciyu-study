@@ -7,13 +7,26 @@
   box-sizing: border-box;
   font-family: var(--ciyu-font-sans);
   font-size: var(--ciyu-text-base);
-  line-height: 1.55;
+  line-height: 1.62;
+  letter-spacing: -0.005em;
   color: var(--ciyu-text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   container-type: inline-size;
   container-name: ciyu-root;
   position: relative;
+}
+
+/* 等宽数字：音频时间、计数、徽章、评分零抖动 */
+.ciyu-ui .ciyu-badge,
+.ciyu-ui .ciyu-count-pill,
+.ciyu-ui .ciyu-apple-value,
+.ciyu-ui .ciyu-progress-label,
+.ciyu-ui .ciyu-seg-badge,
+.ciyu-ui .ciyu-audio-time,
+.ciyu-ui .ciyu-stat-value {
+  font-variant-numeric: tabular-nums;
 }
 
 .ciyu-ui *,
@@ -122,10 +135,10 @@
     transform var(--ciyu-dur-fast) var(--ciyu-ease-spring);
 }
 
-/* 液态玻璃边缘微折射层（先柔和清透模糊再叠加低幅度光学折射，绝不干扰正文） */
+/* 液态玻璃边缘棱镜高光环（纯 CSS 零坏图，自适应任意尺寸） */
 .ciyu-ui.ciyu-refraction-enabled .ciyu-glass-refract {
   backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1)) url(#ciyu-liquid-refract);
+    brightness(var(--ciyu-glass-brightness, 1));
   -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
     brightness(var(--ciyu-glass-brightness, 1));
 }
@@ -139,11 +152,11 @@
   opacity: var(--ciyu-refraction-opacity);
   background:
     linear-gradient(
-      138deg,
+      145deg,
       rgba(255, 255, 255, 0.78) 0%,
-      rgba(255, 255, 255, 0.16) 24%,
-      rgba(0, 122, 255, 0.06) 64%,
-      rgba(255, 255, 255, 0.52) 100%
+      rgba(255, 255, 255, 0.18) 38%,
+      rgba(255, 255, 255, 0.08) 68%,
+      rgba(255, 255, 255, 0.48) 100%
     );
   mask:
     linear-gradient(#000 0 0) content-box,
@@ -170,7 +183,7 @@
     );
 }
 
-/* 稳定高对比正文阅读层（全局 Liquid Glass 柔雾玻璃卡片，清晰耐读且透底折射） */
+/* 稳定高对比正文阅读层（通透高光卡片；静态卡片不叠加多余 backdrop-filter 以保证 120fps 流畅滚动） */
 .ciyu-ui .ciyu-surface {
   background-color: var(--ciyu-reading-bg);
   background-image: var(--ciyu-glass-sheen);
@@ -180,11 +193,8 @@
     var(--ciyu-specular-top),
     var(--ciyu-specular-rim),
     var(--ciyu-specular-bottom),
-    var(--ciyu-shadow-sm);
-  backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
-  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
+    var(--ciyu-shadow-xs);
+  contain: layout style;
 }
 
 .ciyu-ui.ciyu-popover-shell .ciyu-surface {
@@ -279,14 +289,8 @@
   gap: 10px;
   padding: 12px 12px 10px;
   flex-shrink: 0;
-  background-color: var(--ciyu-glass-bg);
-  background-image: var(--ciyu-glass-sheen);
+  background-color: var(--ciyu-canvas-bg);
   border-bottom: 0.5px solid var(--ciyu-border-subtle);
-  box-shadow: var(--ciyu-specular-top), 0 4px 16px rgba(0, 0, 0, 0.035);
-  backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
-  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur-heavy)) saturate(var(--ciyu-glass-saturate))
-    brightness(var(--ciyu-glass-brightness, 1));
   z-index: 8;
 }
 
@@ -459,22 +463,156 @@
     0 2px 8px rgba(24, 46, 74, 0.09),
     0 0 0 0.5px var(--ciyu-border-outer);
   transition:
-    transform 360ms cubic-bezier(0.22, 1.2, 0.36, 1),
-    width 260ms cubic-bezier(0.22, 1, 0.36, 1),
-    background 200ms ease,
-    box-shadow 200ms ease,
-    backdrop-filter 200ms ease;
+    transform 340ms cubic-bezier(0.22, 1.2, 0.36, 1),
+    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
-/* 单击跨页签滑移中的液态玻璃微光感 */
-.ciyu-ui .ciyu-segmented[data-gliding="true"] .ciyu-seg-lens {
+/* 共享：悬浮液态玻璃水滴的纯白银亮高光边（无彩虹色） */
+.ciyu-ui .ciyu-seg-lens::before,
+.ciyu-ui .ciyu-apple-nav-lens::before,
+.ciyu-ui .ciyu-apple-seg-lens::before,
+.ciyu-ui .ciyu-liquid-lens::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(255, 255, 255, 0.42) 48%,
+    rgba(255, 255, 255, 0.84) 100%
+  );
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  transition: opacity 150ms ease;
+}
+
+.ciyu-ui .ciyu-segmented[data-gliding="true"] .ciyu-seg-lens::before,
+.ciyu-ui .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens::before,
+.ciyu-ui .ciyu-apple-settings-nav[data-gliding="true"] .ciyu-apple-nav-lens::before,
+.ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens::before,
+.ciyu-ui .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens::before,
+.ciyu-ui .ciyu-liquid-seg-host[data-gliding="true"] .ciyu-liquid-lens::before,
+.ciyu-ui .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens::before {
+  opacity: 1;
+}
+
+/* 通用横向悬浮液态玻璃透镜（六级子页面导航、Section A/B/C 等复用） */
+.ciyu-ui .ciyu-liquid-seg-host {
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ciyu-ui .ciyu-liquid-lens {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  z-index: 1;
+  border-radius: 12px;
+  pointer-events: none;
+  will-change: transform, width;
+  background: var(--ciyu-glass-thumb-bg);
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-    0 6px 18px rgba(0, 122, 255, 0.14),
-    0 0 0 0.5px var(--ciyu-accent-border);
+    var(--ciyu-specular-top),
+    0 2px 8px rgba(15, 28, 48, 0.08),
+    0 0 0 0.5px var(--ciyu-border-outer);
+  transition:
+    transform 340ms cubic-bezier(0.22, 1.2, 0.36, 1),
+    width 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 160ms ease,
+    box-shadow 160ms ease;
 }
 
-/* 按住拖动时的 Liquid Glass 液态水滴隆起与光学边缘折射态 */
+.ciyu-ui .ciyu-liquid-seg-host[data-gliding="true"] .ciyu-liquid-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(255, 255, 255, 0.16) 56%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+  backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
+  -webkit-backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.96),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.05),
+    0 8px 20px rgba(15, 28, 48, 0.1);
+}
+
+.ciyu-ui .ciyu-liquid-seg-host[data-dragging="true"] {
+  cursor: grabbing;
+}
+
+.ciyu-ui .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.48) 0%,
+      rgba(255, 255, 255, 0.12) 54%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+  backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
+  box-shadow:
+    inset 0 2px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
+    0 10px 24px rgba(15, 28, 48, 0.13);
+  transition:
+    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.theme-dark .ciyu-ui .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens,
+.ciyu-ui[data-theme="dark"] .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens {
+  background:
+    radial-gradient(
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 56%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.36),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.32),
+    0 12px 26px rgba(0, 0, 0, 0.42);
+}
+
+/* 单击跨页签滑移中的纯白清透液态玻璃水滴 */
+.ciyu-ui .ciyu-segmented[data-gliding="true"] .ciyu-seg-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(255, 255, 255, 0.16) 55%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+  backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
+  -webkit-backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
+  box-shadow:
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.96),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.05),
+    0 8px 20px rgba(15, 28, 48, 0.1);
+}
+
+/* 按住拖动时的纯白清透 Liquid Glass 液态水滴 */
 .ciyu-ui .ciyu-segmented[data-dragging="true"] {
   cursor: grabbing;
 }
@@ -483,44 +621,37 @@
   z-index: 3;
   background:
     radial-gradient(
-      115% 95% at var(--ciyu-lens-sheen-x, 50%) 16%,
-      rgba(255, 255, 255, 0.72) 0%,
-      rgba(255, 255, 255, 0.24) 55%,
-      rgba(255, 255, 255, 0.14) 100%
+      110% 85% at var(--ciyu-lens-sheen-x, 50%) 12%,
+      rgba(255, 255, 255, 0.48) 0%,
+      rgba(255, 255, 255, 0.12) 52%,
+      rgba(255, 255, 255, 0.08) 100%
     );
-  backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
-  -webkit-backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-    inset 0 -1.5px 2px rgba(0, 122, 255, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
-    0 10px 24px rgba(15, 28, 48, 0.16),
-    0 2px 6px rgba(15, 28, 48, 0.08);
+    inset 0 2px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
+    0 10px 24px rgba(15, 28, 48, 0.13),
+    0 2px 6px rgba(15, 28, 48, 0.05);
   transition:
     transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
 }
 
-.ciyu-ui.ciyu-refraction-enabled .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens {
-  backdrop-filter: blur(6px) saturate(210%) brightness(1.06) url(#ciyu-liquid-refract);
-  -webkit-backdrop-filter: blur(6px) saturate(210%) brightness(1.06);
-}
-
 .theme-dark .ciyu-ui .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens,
 .ciyu-ui[data-theme="dark"] .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens {
   background:
     radial-gradient(
-      115% 95% at var(--ciyu-lens-sheen-x, 50%) 16%,
-      rgba(255, 255, 255, 0.26) 0%,
-      rgba(255, 255, 255, 0.09) 58%,
-      rgba(255, 255, 255, 0.05) 100%
+      110% 85% at var(--ciyu-lens-sheen-x, 50%) 12%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 54%,
+      rgba(255, 255, 255, 0.03) 100%
     );
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
-    inset 0 -1.5px 2px rgba(10, 132, 255, 0.26),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
-    0 12px 28px rgba(0, 0, 0, 0.44);
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.36),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.32),
+    0 12px 26px rgba(0, 0, 0, 0.42);
 }
 
 .ciyu-ui.ciyu-reduced-transparency .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens {
@@ -1658,7 +1789,19 @@
   color: var(--ciyu-text-secondary);
 }
 
-.ciyu-ui .ciyu-mode-btn[aria-pressed="true"] {
+.ciyu-ui .ciyu-mode-switch.ciyu-liquid-seg-host .ciyu-liquid-lens {
+  border-radius: var(--ciyu-radius-pill);
+}
+
+.ciyu-ui .ciyu-mode-switch.ciyu-liquid-seg-host .ciyu-mode-btn {
+  position: relative;
+  z-index: 2;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.ciyu-ui .ciyu-mode-btn[aria-pressed="true"],
+.ciyu-ui .ciyu-mode-btn[data-drag-hover="true"] {
   background: var(--ciyu-glass-thumb-bg);
   color: var(--ciyu-accent-text);
   font-weight: 600;
@@ -2975,10 +3118,20 @@
 }
 
 .ciyu-ui .ciyu-apple-settings-nav[data-gliding="true"] .ciyu-apple-nav-lens {
+  z-index: 3;
+  background:
+    radial-gradient(
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.52) 0%,
+      rgba(255, 255, 255, 0.16) 55%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+  backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
+  -webkit-backdrop-filter: blur(2px) saturate(165%) brightness(1.03);
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-    0 6px 18px rgba(0, 122, 255, 0.14),
-    0 0 0 0.5px var(--ciyu-accent-border);
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.96),
+    inset 0 -1px 1.5px rgba(0, 0, 0, 0.05),
+    0 8px 20px rgba(15, 28, 48, 0.1);
 }
 
 .ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] {
@@ -2989,44 +3142,37 @@
   z-index: 3;
   background:
     radial-gradient(
-      115% 95% at 50% 18%,
-      rgba(255, 255, 255, 0.72) 0%,
-      rgba(255, 255, 255, 0.24) 55%,
-      rgba(255, 255, 255, 0.14) 100%
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.48) 0%,
+      rgba(255, 255, 255, 0.12) 52%,
+      rgba(255, 255, 255, 0.08) 100%
     );
-  backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
-  -webkit-backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-    inset 0 -1.5px 2px rgba(0, 122, 255, 0.18),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
-    0 10px 24px rgba(15, 28, 48, 0.16),
-    0 2px 6px rgba(15, 28, 48, 0.08);
+    inset 0 2px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
+    0 10px 24px rgba(15, 28, 48, 0.13),
+    0 2px 6px rgba(15, 28, 48, 0.05);
   transition:
     transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
 }
 
-.ciyu-ui.ciyu-refraction-enabled .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens {
-  backdrop-filter: blur(6px) saturate(210%) brightness(1.06) url(#ciyu-liquid-refract);
-  -webkit-backdrop-filter: blur(6px) saturate(210%) brightness(1.06);
-}
-
 .theme-dark .ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens,
 .ciyu-ui[data-theme="dark"] .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens {
   background:
     radial-gradient(
-      115% 95% at 50% 18%,
-      rgba(255, 255, 255, 0.26) 0%,
-      rgba(255, 255, 255, 0.09) 58%,
-      rgba(255, 255, 255, 0.05) 100%
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 54%,
+      rgba(255, 255, 255, 0.03) 100%
     );
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
-    inset 0 -1.5px 2px rgba(10, 132, 255, 0.26),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
-    0 12px 28px rgba(0, 0, 0, 0.44);
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.36),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.32),
+    0 12px 26px rgba(0, 0, 0, 0.42);
 }
 
 .ciyu-ui .ciyu-apple-nav-item {
@@ -3198,17 +3344,20 @@
   flex-shrink: 0;
 }
 
-/* Apple 彩色圆角矩形（Squircle）图标底板 */
+/* Apple iOS 27 Layered App Icon 风格 Squircle 图标底板（多层玻璃高光 + 微斜切底边） */
 .ciyu-ui .ciyu-squircle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 26px;
   height: 26px;
-  border-radius: 7px;
+  border-radius: 7.5px;
   flex-shrink: 0;
   color: #ffffff;
-  box-shadow: inset 0 0.5px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.14),
+    0 1.5px 4px rgba(0, 0, 0, 0.12);
 }
 
 .ciyu-ui .ciyu-squircle svg {
@@ -3259,8 +3408,6 @@
   background-color: var(--ciyu-glass-pill-bg);
   border: 0.5px solid var(--ciyu-border-outer);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.045);
-  backdrop-filter: blur(12px) saturate(190%);
-  -webkit-backdrop-filter: blur(12px) saturate(190%);
   flex-shrink: 0;
   touch-action: none;
   user-select: none;
@@ -3296,18 +3443,17 @@
   z-index: 3;
   background:
     radial-gradient(
-      115% 95% at 50% 18%,
-      rgba(255, 255, 255, 0.76) 0%,
-      rgba(255, 255, 255, 0.28) 58%,
-      rgba(255, 255, 255, 0.14) 100%
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.48) 0%,
+      rgba(255, 255, 255, 0.12) 52%,
+      rgba(255, 255, 255, 0.08) 100%
     );
-  backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
-  -webkit-backdrop-filter: blur(7px) saturate(210%) brightness(1.06);
+  backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
+  -webkit-backdrop-filter: blur(1.5px) saturate(170%) contrast(1.03) brightness(1.03);
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.96),
-    inset 0 -1px 2px rgba(0, 122, 255, 0.16),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.78),
-    0 8px 20px rgba(15, 28, 48, 0.15);
+    inset 0 2px 2px rgba(255, 255, 255, 0.98),
+    inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
+    0 10px 24px rgba(15, 28, 48, 0.13);
   transition:
     transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
@@ -3318,14 +3464,14 @@
 .ciyu-ui[data-theme="dark"] .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens {
   background:
     radial-gradient(
-      115% 95% at 50% 18%,
-      rgba(255, 255, 255, 0.26) 0%,
-      rgba(255, 255, 255, 0.1) 58%,
-      rgba(255, 255, 255, 0.05) 100%
+      110% 85% at 50% 12%,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.05) 54%,
+      rgba(255, 255, 255, 0.03) 100%
     );
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.42),
-    inset 0 -1px 2px rgba(10, 132, 255, 0.24),
+    inset 0 1.5px 1.5px rgba(255, 255, 255, 0.36),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.32),
     0 10px 24px rgba(0, 0, 0, 0.42);
 }
 
@@ -3396,51 +3542,20 @@
 .ciyu-ui .ciyu-mini-win {
   position: relative;
   width: 100%;
-  height: 58px;
+  height: 52px;
   flex-shrink: 0;
-  border-radius: 8px;
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  border: 0.5px solid rgba(128, 128, 128, 0.3);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
+  border: 0.5px solid rgba(128, 128, 128, 0.24);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), inset 0 0.5px 0 rgba(255, 255, 255, 0.25);
   overflow: hidden;
   box-sizing: border-box;
 }
 
-.ciyu-ui .ciyu-mini-win-top {
-  height: 15px;
-  padding: 0 7px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.16);
-  border-bottom: 0.5px solid rgba(128, 128, 128, 0.18);
-}
-
-.ciyu-ui .ciyu-mini-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.12);
-}
-
-.ciyu-ui .ciyu-mini-dot:nth-child(1) {
-  background: #ff5f57;
-}
-
-.ciyu-ui .ciyu-mini-dot:nth-child(2) {
-  background: #febc2e;
-}
-
-.ciyu-ui .ciyu-mini-dot:nth-child(3) {
-  background: #28c840;
-}
-
 .ciyu-ui .ciyu-mini-win-body {
   flex: 1 1 auto;
-  padding: 6px;
+  padding: 7px;
   display: flex;
   align-items: stretch;
   min-height: 0;
@@ -3448,26 +3563,26 @@
 
 .ciyu-ui .ciyu-mini-win-card {
   flex: 1 1 auto;
-  border-radius: 5px;
-  padding: 5px 6px;
+  border-radius: 6px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 4px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  gap: 5px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .ciyu-ui .ciyu-mini-win-accent {
   display: block;
-  width: 48%;
-  height: 4.5px;
+  width: 46%;
+  height: 5px;
   border-radius: 999px;
 }
 
 .ciyu-ui .ciyu-mini-win-line {
   display: block;
-  width: 76%;
-  height: 3px;
+  width: 74%;
+  height: 3.5px;
   border-radius: 999px;
   opacity: 0.24;
 }
@@ -3498,6 +3613,399 @@
   font-size: 14.5px;
   font-weight: 660;
   color: var(--ciyu-text-primary);
+}
+
+/* ==========================================================================
+   Cupertino Quiet Canvas 极简美学精修（参考 svnaxis/obsidian-cupertino）
+   内容优先于边框：更充裕的留白呼吸感、低干扰中性徽章、Apple 柔灰引文块与细腻字距
+   ========================================================================== */
+
+.ciyu-ui .ciyu-headword,
+.ciyu-ui .ciyu-apple-pane-title,
+.ciyu-ui .ciyu-settings-title,
+.ciyu-ui .ciyu-paper-section h4 {
+  letter-spacing: -0.02em;
+}
+
+.ciyu-ui .ciyu-result-reading {
+  padding: 16px 18px;
+  gap: 12px;
+}
+
+.ciyu-ui .ciyu-meaning-text,
+.ciyu-ui .ciyu-example-en,
+.ciyu-ui .ciyu-paper-prose {
+  line-height: 1.66;
+}
+
+/* Cupertino 风格柔和引文/例句块（无生硬外框，轻柔浅灰底 + 极细左竖线） */
+.ciyu-ui .ciyu-context-quote,
+.ciyu-ui .ciyu-example-box {
+  background: rgba(118, 118, 128, 0.055);
+  border: none;
+  border-left: 2.5px solid var(--ciyu-border-outer);
+  border-radius: 10px;
+  padding: 10px 13px;
+}
+
+.theme-dark .ciyu-ui .ciyu-context-quote,
+.theme-dark .ciyu-ui .ciyu-example-box,
+.ciyu-ui[data-theme="dark"] .ciyu-context-quote,
+.ciyu-ui[data-theme="dark"] .ciyu-example-box {
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* 次级徽章与标签退后，让词汇、译文与题目成为视觉中心 */
+.ciyu-ui .ciyu-badge--neutral {
+  background: rgba(118, 118, 128, 0.075);
+  border-color: transparent;
+  color: var(--ciyu-text-secondary);
+}
+
+.ciyu-ui .ciyu-vocab-item,
+.ciyu-ui .ciyu-question-card,
+.ciyu-ui .ciyu-review-card {
+  padding: 14px 16px;
+}
+
+.ciyu-ui .ciyu-search-capsule {
+  border-color: var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-specular-top), 0 2px 10px rgba(0, 0, 0, 0.035);
+}
+
+.ciyu-ui .ciyu-search-capsule:focus-within {
+  border-color: var(--ciyu-accent-border);
+  box-shadow: var(--ciyu-specular-top), 0 4px 16px color-mix(in srgb, var(--ciyu-accent) 14%, transparent);
+}
+
+.ciyu-ui .ciyu-apple-row {
+  padding: 11px 15px;
+}
+
+/* ==========================================================================
+   微交互与物理触感体系（参考 emilkowalski/vaul · pacocoursey/cmdk · 闪卡弹性揭示）
+   ========================================================================== */
+
+@keyframes ciyu-vaul-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ciyu-vaul-dialog-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes ciyu-card-reveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+/* Vaul 风格弹窗与划词浮窗弹簧浮现 */
+.ciyu-ui.ciyu-modal-backdrop {
+  animation: ciyu-vaul-backdrop-in 180ms var(--ciyu-ease-standard) both;
+}
+
+.ciyu-ui .ciyu-modal-dialog,
+.ciyu-ui.ciyu-popover-shell {
+  animation: ciyu-vaul-dialog-in 260ms var(--ciyu-ease-spring) both;
+}
+
+/* 复习闪卡揭晓释义与评分栏弹性揭示 */
+.ciyu-ui .ciyu-flashcard-answer {
+  animation: ciyu-card-reveal 240ms var(--ciyu-ease-spring) both;
+}
+
+.ciyu-ui .ciyu-rating-grid {
+  animation: ciyu-vaul-dialog-in 260ms var(--ciyu-ease-spring) both;
+}
+
+.ciyu-ui .ciyu-rating-btn {
+  transition:
+    background var(--ciyu-dur-fast) ease,
+    border-color var(--ciyu-dur-fast) ease,
+    box-shadow var(--ciyu-dur-fast) ease,
+    transform 180ms var(--ciyu-ease-spring);
+}
+
+.ciyu-ui .ciyu-rating-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* cmdk / Emil Tactile Feedback：全插件交互控件统一按压物理微缩回弹 */
+.ciyu-ui .ciyu-btn:active:not(:disabled),
+.ciyu-ui .ciyu-action-btn:active:not(:disabled),
+.ciyu-ui .ciyu-rating-btn:active:not(:disabled),
+.ciyu-ui .ciyu-option-btn:active:not(:disabled),
+.ciyu-ui .ciyu-group-pill:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* 完整尊重「减少动态效果」无障碍设置 */
+.ciyu-ui.ciyu-reduced-motion *,
+.ciyu-ui[data-reduced-motion="true"] *,
+.ciyu-ui.ciyu-reduced-motion,
+.ciyu-ui[data-reduced-motion="true"] {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ciyu-ui.ciyu-modal-backdrop,
+  .ciyu-ui .ciyu-modal-dialog,
+  .ciyu-ui.ciyu-popover-shell,
+  .ciyu-ui .ciyu-flashcard-answer,
+  .ciyu-ui .ciyu-rating-grid {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Sonner 风格堆叠式 Liquid Glass 轻提示（参考 emilkowalski/sonner）
+   ========================================================================== */
+
+.ciyu-ui.ciyu-sonner-toaster {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 9999;
+  width: min(356px, calc(100vw - 28px));
+  pointer-events: none;
+}
+
+.ciyu-ui .ciyu-sonner-toast {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 15px;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  background-color: var(--ciyu-glass-bg-elevated, rgba(255, 255, 255, 0.84));
+  background-image: var(--ciyu-glass-sheen);
+  border: 0.5px solid var(--ciyu-border-outer);
+  box-shadow:
+    var(--ciyu-specular-top),
+    var(--ciyu-specular-rim),
+    0 10px 28px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(var(--ciyu-glass-blur-heavy, 14px)) saturate(185%);
+  -webkit-backdrop-filter: blur(var(--ciyu-glass-blur-heavy, 14px)) saturate(185%);
+  color: var(--ciyu-text-primary);
+  opacity: 0;
+  transform: translate3d(var(--ciyu-toast-swipe-x, 0px), 18px, 0) scale(0.95);
+  transition:
+    transform 280ms var(--ciyu-ease-spring),
+    opacity 220ms var(--ciyu-ease-standard),
+    box-shadow 200ms ease;
+  will-change: transform, opacity;
+}
+
+.ciyu-ui .ciyu-sonner-toast[data-mounted="true"] {
+  opacity: calc(1 - var(--ciyu-toast-index, 0) * 0.18);
+  transform:
+    translate3d(var(--ciyu-toast-swipe-x, 0px), var(--ciyu-toast-y, 0px), 0)
+    scale(calc(1 - var(--ciyu-toast-index, 0) * 0.05));
+}
+
+.ciyu-ui.ciyu-sonner-toaster[data-expanded="true"] .ciyu-sonner-toast[data-mounted="true"] {
+  opacity: 1;
+  transform:
+    translate3d(var(--ciyu-toast-swipe-x, 0px), var(--ciyu-toast-y, 0px), 0)
+    scale(1);
+}
+
+.ciyu-ui .ciyu-sonner-toast[data-hidden="true"] {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+
+.ciyu-ui .ciyu-sonner-toast[data-leaving="true"] {
+  opacity: 0 !important;
+  pointer-events: none;
+  transform: translate3d(28px, var(--ciyu-toast-y, 0px), 0) scale(0.94) !important;
+}
+
+.ciyu-ui .ciyu-sonner-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.ciyu-ui .ciyu-sonner-icon--success {
+  background: var(--ciyu-success-soft);
+  color: var(--ciyu-success);
+}
+
+.ciyu-ui .ciyu-sonner-icon--error {
+  background: var(--ciyu-danger-soft);
+  color: var(--ciyu-danger);
+}
+
+.ciyu-ui .ciyu-sonner-icon--warning {
+  background: var(--ciyu-warning-soft);
+  color: var(--ciyu-warning);
+}
+
+.ciyu-ui .ciyu-sonner-icon--info {
+  background: var(--ciyu-accent-soft);
+  color: var(--ciyu-accent-text);
+}
+
+.ciyu-ui .ciyu-sonner-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 520;
+  line-height: 1.45;
+  color: var(--ciyu-text-primary);
+  word-break: break-word;
+}
+
+.ciyu-ui .ciyu-sonner-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px !important;
+  min-height: 22px;
+  padding: 0 !important;
+  border-radius: 999px;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+  color: var(--ciyu-text-tertiary);
+  opacity: 0.55;
+  flex-shrink: 0;
+  transition: opacity 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.ciyu-ui .ciyu-sonner-toast:hover .ciyu-sonner-close {
+  opacity: 1;
+}
+
+.ciyu-ui .ciyu-sonner-close:hover {
+  background: var(--ciyu-glass-pill-hover);
+  color: var(--ciyu-text-primary);
+}
+
+.ciyu-ui.ciyu-reduced-transparency .ciyu-sonner-toast,
+.ciyu-ui[data-reduced-transparency="true"] .ciyu-sonner-toast {
+  background: var(--ciyu-reading-bg-solid);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.ciyu-ui .ciyu-sonner-toast {
+  overflow: hidden;
+}
+
+@keyframes ciyu-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.ciyu-ui .ciyu-sonner-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  transform-origin: left center;
+  background: color-mix(in srgb, var(--ciyu-accent) 42%, transparent);
+  animation: ciyu-toast-progress var(--ciyu-toast-duration, 3600ms) linear forwards;
+  pointer-events: none;
+}
+
+.ciyu-ui.ciyu-sonner-toaster[data-expanded="true"] .ciyu-sonner-progress {
+  animation-play-state: paused;
+}
+
+/* macOS 风格轻键帽提示 & 复习评分头 */
+.ciyu-ui .ciyu-kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 5px;
+  font-family: var(--ciyu-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  background: rgba(120, 120, 128, 0.14);
+  color: inherit;
+  opacity: 0.72;
+}
+
+.ciyu-ui .ciyu-btn--primary .ciyu-kbd {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  opacity: 0.92;
+}
+
+.ciyu-ui .ciyu-rate-head {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* macOS 极细圆角滚动条 */
+.ciyu-ui .ciyu-sidebar-body::-webkit-scrollbar,
+.ciyu-ui.ciyu-exam-workspace::-webkit-scrollbar,
+.ciyu-ui .ciyu-modal-body::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.ciyu-ui .ciyu-sidebar-body::-webkit-scrollbar-track,
+.ciyu-ui.ciyu-exam-workspace::-webkit-scrollbar-track,
+.ciyu-ui .ciyu-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ciyu-ui .ciyu-sidebar-body::-webkit-scrollbar-thumb,
+.ciyu-ui.ciyu-exam-workspace::-webkit-scrollbar-thumb,
+.ciyu-ui .ciyu-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 128, 0.22);
+  border-radius: 999px;
+}
+
+.ciyu-ui .ciyu-sidebar-body::-webkit-scrollbar-thumb:hover,
+.ciyu-ui.ciyu-exam-workspace::-webkit-scrollbar-thumb:hover,
+.ciyu-ui .ciyu-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 128, 0.4);
 }
 
 /* ==========================================================================
