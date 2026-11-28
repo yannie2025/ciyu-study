@@ -793,12 +793,12 @@ module.exports = class CiyuPlugin extends Plugin {
     const sourceFile = source ? this.app.vault.getAbstractFileByPath(source) : null;
     const link = sourceFile instanceof TFile && sourceFile.path !== path
       ? this.app.fileManager.generateMarkdownLink(sourceFile, path) : '';
-    const body = '\n' + markdownEntry(entry, link, 2, { archiveBlock: true });
+    const makeBody = blockIndex => '\n' + markdownEntry(entry, link, 2, { archiveBlock: true, blockIndex });
     await this.ensureFolder(folder);
     let file = this.app.vault.getAbstractFileByPath(path);
     if (!file) {
       try {
-        const createdText = '# ' + date + ' 词汇\n' + body;
+        const createdText = '# ' + date + ' 词汇\n' + makeBody(1);
         file = await this.app.vault.create(path, createdText);
         this.noteChange({ file, created: true, after: createdText });
         return path;
@@ -828,8 +828,9 @@ module.exports = class CiyuPlugin extends Plugin {
         return path;
       }
       change.before = before;
+      const nextIndex = archiveEntries(before, path).length + 1;
       const line = editor.lastLine();
-      editor.replaceRange('\n' + body, { line, ch: editor.getLine(line).length });
+      editor.replaceRange('\n' + makeBody(nextIndex), { line, ch: editor.getLine(line).length });
       change.after = editor.getValue();
     } else {
       let changed = true;
@@ -845,7 +846,8 @@ module.exports = class CiyuPlugin extends Plugin {
           return merged.content;
         }
         change.before = text;
-        change.after = text.trimEnd() + '\n' + body;
+        const nextIndex = archiveEntries(text, path).length + 1;
+        change.after = text.trimEnd() + '\n' + makeBody(nextIndex);
         return change.after;
       });
       if (!changed) return path;
@@ -952,9 +954,35 @@ module.exports = class CiyuPlugin extends Plugin {
     return { roots, derivatives };
   }
 
-  async openArchiveEntry(notePath, term, blockId = '', line = 0) {
+  async openArchiveEntry(notePath, term, blockId = '', line = 0, jumpedEntryId = '') {
     const file = this.app.vault.getAbstractFileByPath(notePath);
     if (!(file instanceof TFile)) throw new Error('该每日归档笔记已删除或不在此库中。');
+
+    // 记录跳转前正在阅读的原笔记、视图模式、精确滚动位置与光标行号，方便点完「定位词块」后一键回到原位置
+    const prevView = this.app.workspace?.getActiveViewOfType ? this.noteView() : null;
+    if (prevView?.file && prevView.file.path !== file.path) {
+      const cursor = prevView.editor?.getCursor?.();
+      const scrollVal = prevView.currentMode?.getScroll?.();
+      const scrollInfo = prevView.editor?.getScrollInfo?.();
+      this.archiveReturnTarget = {
+        path: prevView.file.path,
+        title: prevView.file.basename || prevView.file.name,
+        mode: prevView.getMode?.() || 'source',
+        scroll: typeof scrollVal === 'number' && Number.isFinite(scrollVal) ? scrollVal : undefined,
+        scrollLeft: typeof scrollInfo?.left === 'number' ? scrollInfo.left : undefined,
+        scrollTop: typeof scrollInfo?.top === 'number' ? scrollInfo.top : undefined,
+        line: Number.isInteger(cursor?.line) ? cursor.line : 0,
+        ch: Number.isInteger(cursor?.ch) ? cursor.ch : 0,
+        leaf: prevView.leaf || null,
+        jumpedEntryId: jumpedEntryId || `${notePath}:${line}`,
+      };
+    } else if (this.archiveReturnTarget && jumpedEntryId) {
+      this.archiveReturnTarget = {
+        ...this.archiveReturnTarget,
+        jumpedEntryId,
+      };
+    }
+
     const baseTarget = file.path.replace(/\.md$/iu, '');
     if (this.app.workspace.openLinkText && (blockId || term)) {
       const anchor = blockId ? `#^${blockId}` : `#${term}`;
@@ -976,6 +1004,62 @@ module.exports = class CiyuPlugin extends Plugin {
       view.editor.setCursor?.({ line: safeLine, ch: 0 });
       view.editor.scrollIntoView?.({ from: { line: safeLine, ch: 0 }, to: { line: safeLine + 5, ch: 0 } }, true);
     }
+    this.refresh(['archive']);
+  }
+
+  async returnToArchiveOrigin() {
+    const target = this.archiveReturnTarget;
+    if (!target?.path) return;
+    this.archiveReturnTarget = null;
+    const file = this.app.vault.getAbstractFileByPath(target.path);
+    if (!(file instanceof TFile)) {
+      this.refresh(['archive']);
+      throw new Error('原笔记已移动或删除，无法返回。');
+    }
+    const eState = {};
+    if (typeof target.scroll === 'number') eState.scroll = target.scroll;
+    if (Number.isInteger(target.line)) eState.line = target.line;
+
+    const reusableLeaf = target.leaf && target.leaf.parent ? target.leaf : null;
+    if (reusableLeaf?.openFile) {
+      await reusableLeaf.openFile(file, {
+        active: true,
+        state: target.mode ? { mode: target.mode } : undefined,
+        eState,
+      });
+      this.app.workspace.revealLeaf?.(reusableLeaf);
+    } else {
+      await this.openSource(target.path);
+    }
+
+    const restorePosition = () => {
+      const leafView = reusableLeaf?.view?.file === file ? reusableLeaf.view : null;
+      const view = leafView
+        || (this.app.workspace.getLeavesOfType('markdown') || [])
+          .map(leaf => leaf.view)
+          .find(v => v?.file === file);
+      if (!view) return;
+      if (view.editor && Number.isInteger(target.line)) {
+        const safeLine = Math.max(0, Math.min(view.editor.lastLine?.() ?? target.line, target.line));
+        const pos = { line: safeLine, ch: Number.isInteger(target.ch) ? target.ch : 0 };
+        view.editor.setCursor?.(pos);
+        if (typeof target.scrollTop === 'number') {
+          view.editor.scrollTo?.(target.scrollLeft ?? 0, target.scrollTop);
+        } else {
+          view.editor.scrollIntoView?.({ from: pos, to: { line: safeLine + 3, ch: 0 } }, true);
+        }
+      }
+      if (typeof target.scroll === 'number') {
+        view.currentMode?.applyScroll?.(target.scroll);
+      }
+    };
+
+    restorePosition();
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => restorePosition());
+    }
+    setTimeout(() => restorePosition(), 60);
+    this.refresh(['archive']);
   }
 
   notifyArchiveWithJump(message, hit) {

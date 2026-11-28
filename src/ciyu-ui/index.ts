@@ -12,6 +12,7 @@ export { CIYU_VERSION, CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD } from './changel
 export { CIYU_COLOR_THEMES, DEFAULT_CUSTOM_THEME, applyColorTheme, resolveThemeColors } from './themes';
 export { createIcon, createBrandLogo, CIYU_BRAND_ICON_INNER, type IconName } from './icons';
 export { ensureLiquidGlassFilter, applyGlassPreferences } from './glass';
+export { applyProMotionToRoot, attachAdaptiveProMotion, getProMotionState, probeDisplayRefreshRate, normalizeDragVelocity, type ProMotionState, type RefreshTier } from './promotion';
 export { showCiyuToast, destroyCiyuToasts, type CiyuToastTone, type CiyuToastOptions, type CiyuToastHandle } from './toast';
 export { createSegmentedNav, type SegmentedNavProps, type SegmentedNavCallbacks } from './components/SegmentedNav';
 export { createResultCard } from './components/ResultCard';

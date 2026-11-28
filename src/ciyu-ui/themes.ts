@@ -11,11 +11,14 @@
 
 import type { CiyuColorThemeId, CiyuCustomThemeColors } from './types';
 
+export type CiyuUiStyleId = 'apple' | 'geist' | 'editorial' | 'powershell' | 'primer';
+
 export interface CiyuColorThemePreset {
   id: CiyuColorThemeId;
   name: string;
   tag: string;
   source?: string;
+  uiStyle?: CiyuUiStyleId;
   isDark?: boolean;
   colors?: CiyuCustomThemeColors;
 }
@@ -30,112 +33,163 @@ export const DEFAULT_CUSTOM_THEME: CiyuCustomThemeColors = {
 export const CIYU_COLOR_THEMES: ReadonlyArray<CiyuColorThemePreset> = [
   {
     id: 'system',
-    name: '跟随系统（黑白默认）',
-    tag: '自适应',
+    name: '跟随系统（Apple 玻璃）',
+    tag: 'Apple 风格',
     source: 'Apple System',
+    uiStyle: 'apple',
   },
   {
-    id: 'catppuccin-latte',
-    name: 'Catppuccin Latte',
-    tag: '柔和浅色',
-    source: 'MIT · Catppuccin',
+    id: 'pure-white',
+    name: 'Geist 极简纯白',
+    tag: 'Vercel 黑白',
+    source: 'Geist / shadcn',
+    uiStyle: 'geist',
     isDark: false,
     colors: {
-      accent: '#1e66f5',
-      canvasBg: '#eff1f5',
+      accent: '#111111',
+      canvasBg: '#fafafa',
       surfaceBg: '#ffffff',
-      textPrimary: '#4c4f69',
+      textPrimary: '#0a0a0a',
     },
   },
   {
-    id: 'catppuccin-mocha',
-    name: 'Catppuccin Mocha',
-    tag: '摩卡深色',
-    source: 'MIT · Catppuccin',
+    id: 'pure-black',
+    name: 'Linear 极简纯黑',
+    tag: 'Linear 黑白',
+    source: 'Linear / Geist',
+    uiStyle: 'geist',
     isDark: true,
     colors: {
-      accent: '#cba6f7',
-      canvasBg: '#1e1e2e',
-      surfaceBg: '#27273a',
-      textPrimary: '#cdd6f4',
+      accent: '#fafafa',
+      canvasBg: '#09090b',
+      surfaceBg: '#121215',
+      textPrimary: '#f4f4f5',
     },
   },
   {
-    id: 'nord',
-    name: 'Nord 极光蓝',
-    tag: '北欧深色',
-    source: 'MIT · Nord Theme',
-    isDark: true,
-    colors: {
-      accent: '#88c0d0',
-      canvasBg: '#2e3440',
-      surfaceBg: '#3b4252',
-      textPrimary: '#eceff4',
-    },
-  },
-  {
-    id: 'rose-pine-dawn',
-    name: 'Rosé Pine Dawn',
-    tag: '玫瑰晨曦',
-    source: 'MIT · Rosé Pine',
+    id: 'oyaishi-silk',
+    name: 'Oyaishi 墨韵浅纸',
+    tag: '纸墨排版',
+    source: 'Oyaishi / Baseline',
+    uiStyle: 'editorial',
     isDark: false,
     colors: {
-      accent: '#b4637a',
-      canvasBg: '#faf4ed',
-      surfaceBg: '#fffaf3',
-      textPrimary: '#575279',
+      accent: '#2d2a26',
+      canvasBg: '#f6f4ef',
+      surfaceBg: '#fffefb',
+      textPrimary: '#24211e',
     },
   },
   {
-    id: 'rose-pine',
-    name: 'Rosé Pine 夜色',
-    tag: '暗夜柔紫',
-    source: 'MIT · Rosé Pine',
+    id: 'oyaishi-ink',
+    name: 'Oyaishi 墨夜深灰',
+    tag: '纸墨深色',
+    source: 'Oyaishi / Baseline',
+    uiStyle: 'editorial',
     isDark: true,
     colors: {
-      accent: '#c4a7e7',
-      canvasBg: '#191724',
-      surfaceBg: '#1f1d2e',
-      textPrimary: '#e0def4',
+      accent: '#d6cab6',
+      canvasBg: '#1b1a18',
+      surfaceBg: '#242220',
+      textPrimary: '#ebe6dc',
     },
   },
   {
-    id: 'everforest-light',
-    name: 'Everforest 浅林',
-    tag: '护眼浅绿',
-    source: 'MIT · Everforest',
-    isDark: false,
-    colors: {
-      accent: '#3a94c5',
-      canvasBg: '#f3efda',
-      surfaceBg: '#fdf6e3',
-      textPrimary: '#5c6a72',
-    },
-  },
-  {
-    id: 'everforest-dark',
-    name: 'Everforest 深林',
-    tag: '护眼深绿',
-    source: 'MIT · Everforest',
+    id: 'powershell-classic',
+    name: 'PowerShell 经典蓝',
+    tag: 'Fluent 2 终端',
+    source: 'Windows Terminal',
+    uiStyle: 'powershell',
     isDark: true,
     colors: {
-      accent: '#a7c080',
-      canvasBg: '#272e33',
-      surfaceBg: '#2f383e',
-      textPrimary: '#d3c6aa',
+      accent: '#61d6d6',
+      canvasBg: '#012456',
+      surfaceBg: '#07326e',
+      textPrimary: '#eeedf0',
     },
   },
   {
-    id: 'solarized-light',
-    name: 'Solarized 暖纸',
-    tag: '经典暖浅',
-    source: 'MIT · Solarized',
+    id: 'powershell-7',
+    name: 'PowerShell 7 现代黑',
+    tag: 'Fluent 2 终端',
+    source: 'PowerShell 7',
+    uiStyle: 'powershell',
+    isDark: true,
+    colors: {
+      accent: '#3b78ff',
+      canvasBg: '#0c0c0c',
+      surfaceBg: '#171923',
+      textPrimary: '#d8dee9',
+    },
+  },
+  {
+    id: 'powershell-ise',
+    name: 'PowerShell ISE 浅蓝',
+    tag: 'ISE 浅终端',
+    source: 'PowerShell ISE',
+    uiStyle: 'powershell',
     isDark: false,
     colors: {
-      accent: '#268bd2',
-      canvasBg: '#fdf6e3',
-      surfaceBg: '#fffbf0',
-      textPrimary: '#586e75',
+      accent: '#012456',
+      canvasBg: '#f2f5fa',
+      surfaceBg: '#ffffff',
+      textPrimary: '#10203a',
+    },
+  },
+  {
+    id: 'powershell-campbell',
+    name: 'Campbell 终端绿',
+    tag: 'Win Terminal',
+    source: 'Campbell',
+    uiStyle: 'powershell',
+    isDark: true,
+    colors: {
+      accent: '#16c60c',
+      canvasBg: '#0c0c0c',
+      surfaceBg: '#181818',
+      textPrimary: '#f2f2f2',
+    },
+  },
+  {
+    id: 'powershell-onehalf',
+    name: 'One Half 终端灰',
+    tag: 'Win Terminal',
+    source: 'One Half Dark',
+    uiStyle: 'powershell',
+    isDark: true,
+    colors: {
+      accent: '#61afef',
+      canvasBg: '#282c34',
+      surfaceBg: '#313640',
+      textPrimary: '#dcdfe4',
+    },
+  },
+  {
+    id: 'primer-light',
+    name: 'GitHub Primer 浅色',
+    tag: '工作台浅色',
+    source: 'Primer / Radix',
+    uiStyle: 'primer',
+    isDark: false,
+    colors: {
+      accent: '#0969da',
+      canvasBg: '#f6f8fa',
+      surfaceBg: '#ffffff',
+      textPrimary: '#1f2328',
+    },
+  },
+  {
+    id: 'primer-dark',
+    name: 'GitHub Primer 深色',
+    tag: '工作台深色',
+    source: 'Primer / Radix',
+    uiStyle: 'primer',
+    isDark: true,
+    colors: {
+      accent: '#58a6ff',
+      canvasBg: '#0d1117',
+      surfaceBg: '#161b22',
+      textPrimary: '#e6edf3',
     },
   },
   {
@@ -143,6 +197,7 @@ export const CIYU_COLOR_THEMES: ReadonlyArray<CiyuColorThemePreset> = [
     name: '自定义配色',
     tag: '自由调色',
     source: 'Custom',
+    uiStyle: 'apple',
   },
 ];
 
@@ -265,6 +320,9 @@ export function applyColorTheme(
   customColors?: Partial<CiyuCustomThemeColors>
 ): void {
   const resolved = resolveThemeColors(themeId, customColors);
+  const matchedPreset = CIYU_COLOR_THEMES.find((t) => t.id === (themeId || 'system'));
+  root.setAttribute('data-ui-style', matchedPreset?.uiStyle ?? 'apple');
+
   if (!resolved) {
     root.removeAttribute('data-color-theme');
     root.removeAttribute('data-theme');

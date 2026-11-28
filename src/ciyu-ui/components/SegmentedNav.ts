@@ -1,5 +1,6 @@
 import { el } from '../dom';
 import { createIcon, type IconName } from '../icons';
+import { normalizeDragVelocity } from '../promotion';
 import type { CiyuTabId, UIComponentHandle } from '../types';
 
 export interface SegmentedNavProps {
@@ -223,6 +224,7 @@ export function createSegmentedNav(
     }
   }
 
+  let lastMoveTime = 0;
   const onWinPointerMove = (e: PointerEvent) => {
     if (!pointerDown || activePointerId !== e.pointerId) return;
     // 在窗口外松开鼠标后再移回时，buttons 变为 0，立即完成吸附切换
@@ -230,7 +232,10 @@ export function createSegmentedNav(
       finishPointer(e, true);
       return;
     }
-    const vx = e.clientX - lastX;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const dt = lastMoveTime > 0 ? now - lastMoveTime : 16.67;
+    lastMoveTime = now;
+    const vx = normalizeDragVelocity(e.clientX - lastX, dt);
     lastX = e.clientX;
     if (!isDragging && Math.hypot(e.clientX - startX, e.clientY - startY) > 5) {
       if (holdTimer) {
@@ -293,6 +298,7 @@ export function createSegmentedNav(
     startX = e.clientX;
     startY = e.clientY;
     lastX = e.clientX;
+    lastMoveTime = 0;
     hoveredIdx = -1;
     try { nav.setPointerCapture(e.pointerId); } catch {}
     attachGlobalPointerListeners();

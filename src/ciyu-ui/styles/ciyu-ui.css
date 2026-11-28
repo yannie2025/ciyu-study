@@ -561,9 +561,10 @@
     inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
     0 10px 24px rgba(15, 28, 48, 0.13);
   transition:
-    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    transform var(--ciyu-drag-follow, 62ms) cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
+  will-change: transform;
 }
 
 .theme-dark .ciyu-ui .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens,
@@ -599,6 +600,29 @@
     0 8px 20px rgba(15, 28, 48, 0.1);
 }
 
+/* 60Hz 标准屏 / 低电量模式：拖动/滑移透镜关闭嵌套 blur，保证 60fps 零掉帧 */
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-segmented[data-gliding="true"] .ciyu-seg-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-liquid-seg-host[data-gliding="true"] .ciyu-liquid-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-settings-nav[data-gliding="true"] .ciyu-apple-nav-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens,
+.ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-segmented[data-gliding="true"] .ciyu-seg-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-liquid-seg-host[data-gliding="true"] .ciyu-liquid-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-liquid-seg-host[data-dragging="true"] .ciyu-liquid-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-settings-nav[data-gliding="true"] .ciyu-apple-nav-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens,
+.theme-dark .ciyu-ui[data-refresh-tier="standard"] .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens {
+  background: rgba(58, 58, 62, 0.92);
+}
+
 /* 按住拖动时的纯白清透 Liquid Glass 液态水滴 */
 .ciyu-ui .ciyu-segmented[data-dragging="true"] {
   cursor: grabbing;
@@ -621,9 +645,10 @@
     0 10px 24px rgba(15, 28, 48, 0.13),
     0 2px 6px rgba(15, 28, 48, 0.05);
   transition:
-    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    transform var(--ciyu-drag-follow, 62ms) cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
+  will-change: transform;
 }
 
 .theme-dark .ciyu-ui .ciyu-segmented[data-dragging="true"] .ciyu-seg-lens,
@@ -1730,6 +1755,13 @@
   color: var(--ciyu-text-tertiary);
 }
 
+.ciyu-ui .ciyu-icon-btn--armed {
+  background: var(--ciyu-danger-soft) !important;
+  border-color: var(--ciyu-danger-border, rgba(255, 59, 48, 0.42)) !important;
+  color: var(--ciyu-danger) !important;
+  box-shadow: 0 0 0 2px rgba(255, 59, 48, 0.14) !important;
+}
+
 .ciyu-ui .ciyu-confirm-bar {
   display: flex;
   align-items: center;
@@ -1998,9 +2030,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 11px 13px;
+  height: auto !important;
+  min-height: 0;
+  padding: 13px 15px !important;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none !important;
   text-align: left;
   transition: background var(--ciyu-dur-fast) ease;
 }
@@ -2012,7 +2050,7 @@
 .ciyu-ui .ciyu-archive-date-wrap {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   min-width: 0;
 }
 
@@ -2022,12 +2060,14 @@
   gap: 6px;
   font-size: 13.5px;
   font-weight: 620;
+  line-height: 1.35;
   color: var(--ciyu-text-primary);
 }
 
 .ciyu-ui .ciyu-archive-sub {
   font-family: var(--ciyu-font-mono);
   font-size: 11px;
+  line-height: 1.35;
   color: var(--ciyu-text-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2037,7 +2077,7 @@
 .ciyu-ui .ciyu-archive-right {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -2103,11 +2143,45 @@
   color: var(--ciyu-text-secondary);
 }
 
+.ciyu-ui .ciyu-archive-return-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px;
+}
+
+.ciyu-ui .ciyu-archive-return-text {
+  font-size: 12.5px;
+  font-weight: 560;
+  color: var(--ciyu-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ciyu-ui .ciyu-archive-block-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--ciyu-accent-soft);
+  color: var(--ciyu-accent-text);
+  font-family: var(--ciyu-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
 .ciyu-ui .ciyu-archive-meta-box {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding-top: 6px;
+  gap: 8px;
+  padding-top: 8px;
   border-top: 1px dashed var(--ciyu-border-subtle);
 }
 
@@ -2116,6 +2190,11 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 5px 7px;
+}
+
+.ciyu-ui .ciyu-archive-meta-row--stack {
+  flex-direction: column;
+  gap: 5px;
 }
 
 .ciyu-ui .ciyu-archive-meta-label {
@@ -2133,9 +2212,38 @@
   min-width: 0;
 }
 
-.ciyu-ui .ciyu-archive-deriv-chip {
-  font-size: 11.5px;
-  padding: 2px 7px;
+.ciyu-ui .ciyu-archive-deriv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ciyu-ui .ciyu-archive-deriv-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 5px 9px;
+  border-radius: var(--ciyu-radius-xs);
+  background: var(--ciyu-reading-bg-solid);
+  border: 1px solid var(--ciyu-border-subtle);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ciyu-ui .ciyu-archive-deriv-word {
+  font-weight: 620;
+  color: var(--ciyu-text-primary);
+  flex-shrink: 0;
+}
+
+.ciyu-ui .ciyu-archive-deriv-desc {
+  color: var(--ciyu-text-secondary);
+  min-width: 0;
+  word-break: break-word;
 }
 
 .ciyu-ui .ciyu-archive-inline-form {
@@ -3162,9 +3270,10 @@
     0 10px 24px rgba(15, 28, 48, 0.13),
     0 2px 6px rgba(15, 28, 48, 0.05);
   transition:
-    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    transform var(--ciyu-drag-follow, 62ms) cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
+  will-change: transform;
 }
 
 .theme-dark .ciyu-ui .ciyu-apple-settings-nav[data-dragging="true"] .ciyu-apple-nav-lens,
@@ -3462,9 +3571,10 @@
     inset 0 -1.5px 2px rgba(0, 0, 0, 0.06),
     0 10px 24px rgba(15, 28, 48, 0.13);
   transition:
-    transform 65ms cubic-bezier(0.2, 0.9, 0.3, 1),
+    transform var(--ciyu-drag-follow, 62ms) cubic-bezier(0.2, 0.9, 0.3, 1),
     background 140ms ease,
     box-shadow 140ms ease;
+  will-change: transform;
 }
 
 .theme-dark .ciyu-ui .ciyu-apple-segmented[data-dragging="true"] .ciyu-apple-seg-lens,
@@ -4196,4 +4306,359 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
+
+
+/* ==========================================================================
+   PowerShell / Windows Terminal Fluent 2 + Terminal CSS 专属 UI 风格
+   ========================================================================== */
+.ciyu-ui[data-ui-style="powershell"] {
+  --ciyu-font-sans: "Cascadia Code", "Cascadia Mono", "SF Mono", "JetBrains Mono", Menlo, Consolas, ui-monospace, monospace;
+  --ciyu-radius-xs: 2px;
+  --ciyu-radius-sm: 4px;
+  --ciyu-radius-md: 6px;
+  --ciyu-radius-lg: 8px;
+  --ciyu-radius-pill: 4px;
+  --ciyu-shadow-xs: none;
+  --ciyu-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.22);
+  --ciyu-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.34);
+  --ciyu-glass-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  --ciyu-specular-top: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --ciyu-specular-rim: none;
+  --ciyu-specular-bottom: none;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-brand-title::before {
+  content: "PS> ";
+  color: var(--ciyu-accent);
+  font-weight: 700;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-brand-mark {
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Fluent 2 轻亚克力面板 + Terminal CSS 1px 控制台边框（关闭玻璃时自动降级实色） */
+.ciyu-ui[data-ui-style="powershell"] .ciyu-glass,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-settings-nav {
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  background-color: color-mix(in srgb, var(--ciyu-reading-bg-solid) 86%, transparent);
+  border-radius: 6px;
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-specular-top), var(--ciyu-shadow-sm);
+}
+
+.ciyu-ui[data-ui-style="powershell"].ciyu-reduced-transparency .ciyu-glass,
+.ciyu-ui[data-ui-style="powershell"][data-reduced-transparency="true"] .ciyu-glass,
+.ciyu-ui[data-ui-style="powershell"].ciyu-reduced-transparency .ciyu-apple-settings-nav,
+.ciyu-ui[data-ui-style="powershell"][data-reduced-transparency="true"] .ciyu-apple-settings-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-color: var(--ciyu-reading-bg-solid);
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-surface,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-group {
+  background-color: var(--ciyu-reading-bg-solid);
+  border-radius: 6px;
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-specular-top);
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-glass-refract::before {
+  display: none !important;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-segmented,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-exam-subnav-track,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-section-tabs,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-mode-switch,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-segmented {
+  border-radius: 6px;
+  padding: 2px;
+  background-color: var(--ciyu-reading-subtle);
+  border: 1px solid var(--ciyu-border-outer);
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-seg-lens,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-liquid-lens,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-nav-lens,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-seg-lens {
+  border-radius: 4px !important;
+  background: var(--ciyu-accent-soft) !important;
+  border: 1px solid var(--ciyu-accent-border) !important;
+  box-shadow: inset 0 -2px 0 var(--ciyu-accent) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-seg-lens::before,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-liquid-lens::before,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-nav-lens::before,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-seg-lens::before {
+  display: none !important;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-btn,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-mini-btn,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-icon-btn,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-badge,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-count-pill,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-version-pill,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-brand-meta,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-glass-quick-toggle,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-settings-top-btn,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-group-pill,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-note-link,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-mistake-chip {
+  border-radius: 4px !important;
+  box-shadow: none !important;
+}
+
+/* Terminal CSS 风格方括号词块编号 [1] */
+.ciyu-ui[data-ui-style="powershell"] .ciyu-archive-block-index::before { content: "["; }
+.ciyu-ui[data-ui-style="powershell"] .ciyu-archive-block-index::after { content: "]"; }
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-search-capsule {
+  border-radius: 4px;
+  border: 1px solid var(--ciyu-border-outer);
+  background: var(--ciyu-reading-bg-solid);
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-search-capsule:focus-within {
+  border-color: var(--ciyu-accent);
+  box-shadow: 0 0 0 1px var(--ciyu-accent);
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-switch {
+  border-radius: 4px;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-switch::after {
+  border-radius: 2px;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-squircle,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-theme-card,
+.ciyu-ui[data-ui-style="powershell"] .ciyu-audio-play-btn {
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+.ciyu-ui[data-ui-style="powershell"] .ciyu-apple-theme-win {
+  border-radius: 3px;
+}
+
+/* ==========================================================================
+   Geist / Linear / shadcn 极简黑白工艺风格（pure-white / pure-black）
+   ========================================================================== */
+.ciyu-ui[data-ui-style="geist"] {
+  --ciyu-radius-xs: 4px;
+  --ciyu-radius-sm: 6px;
+  --ciyu-radius-md: 8px;
+  --ciyu-radius-lg: 10px;
+  --ciyu-radius-pill: 8px;
+  --ciyu-shadow-xs: none;
+  --ciyu-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ciyu-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.08);
+  --ciyu-glass-sheen: none;
+  --ciyu-specular-top: none;
+  --ciyu-specular-rim: none;
+  --ciyu-specular-bottom: none;
+}
+
+.ciyu-ui[data-ui-style="geist"] .ciyu-glass,
+.ciyu-ui[data-ui-style="geist"] .ciyu-surface,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-group,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-settings-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+  background-color: var(--ciyu-reading-bg-solid);
+  border-radius: 8px;
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-shadow-sm);
+}
+
+.ciyu-ui[data-ui-style="geist"] .ciyu-glass-refract::before {
+  display: none !important;
+}
+
+.ciyu-ui[data-ui-style="geist"] .ciyu-segmented,
+.ciyu-ui[data-ui-style="geist"] .ciyu-exam-subnav-track,
+.ciyu-ui[data-ui-style="geist"] .ciyu-section-tabs,
+.ciyu-ui[data-ui-style="geist"] .ciyu-mode-switch,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-segmented {
+  border-radius: 8px;
+  background-color: var(--ciyu-reading-subtle);
+  border: 1px solid var(--ciyu-border-subtle);
+}
+
+.ciyu-ui[data-ui-style="geist"] .ciyu-seg-lens,
+.ciyu-ui[data-ui-style="geist"] .ciyu-liquid-lens,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-nav-lens,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-seg-lens {
+  border-radius: 6px !important;
+  background: var(--ciyu-reading-bg-solid) !important;
+  border: 1px solid var(--ciyu-border-outer) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.ciyu-ui[data-ui-style="geist"] .ciyu-btn,
+.ciyu-ui[data-ui-style="geist"] .ciyu-mini-btn,
+.ciyu-ui[data-ui-style="geist"] .ciyu-search-capsule,
+.ciyu-ui[data-ui-style="geist"] .ciyu-group-pill,
+.ciyu-ui[data-ui-style="geist"] .ciyu-apple-squircle {
+  border-radius: 6px;
+}
+
+/* ==========================================================================
+   Oyaishi / Baseline 纸墨编辑排版风格（oyaishi-silk / oyaishi-ink）
+   ========================================================================== */
+.ciyu-ui[data-ui-style="editorial"] {
+  --ciyu-radius-xs: 4px;
+  --ciyu-radius-sm: 6px;
+  --ciyu-radius-md: 10px;
+  --ciyu-radius-lg: 12px;
+  --ciyu-shadow-xs: none;
+  --ciyu-shadow-sm: 0 1px 3px rgba(36, 33, 30, 0.04);
+  --ciyu-glass-sheen: none;
+  --ciyu-specular-top: none;
+  --ciyu-specular-rim: none;
+  --ciyu-specular-bottom: none;
+}
+
+.ciyu-ui[data-ui-style="editorial"] .ciyu-glass,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-surface,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-apple-group,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-apple-settings-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+  background-color: var(--ciyu-reading-bg-solid);
+  border: 1px solid var(--ciyu-border-subtle);
+  box-shadow: var(--ciyu-shadow-sm);
+}
+
+.ciyu-ui[data-ui-style="editorial"] .ciyu-glass-refract::before {
+  display: none !important;
+}
+
+.ciyu-ui[data-ui-style="editorial"] .ciyu-seg-lens,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-liquid-lens,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-apple-nav-lens {
+  background: var(--ciyu-reading-bg-solid) !important;
+  border: 1px solid var(--ciyu-border-outer) !important;
+  box-shadow: 0 1px 2px rgba(36, 33, 30, 0.06) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.ciyu-ui[data-ui-style="editorial"] .ciyu-archive-block-meaning,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-vocab-meaning,
+.ciyu-ui[data-ui-style="editorial"] .ciyu-segment-en {
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+}
+
+/* ==========================================================================
+   GitHub Primer / Radix 高密度专业工作台风格（primer-light / primer-dark）
+   ========================================================================== */
+.ciyu-ui[data-ui-style="primer"] {
+  --ciyu-radius-xs: 4px;
+  --ciyu-radius-sm: 6px;
+  --ciyu-radius-md: 6px;
+  --ciyu-radius-lg: 8px;
+  --ciyu-radius-pill: 6px;
+  --ciyu-shadow-xs: 0 1px 0 rgba(31, 35, 40, 0.04);
+  --ciyu-shadow-sm: 0 1px 0 rgba(31, 35, 40, 0.04);
+  --ciyu-glass-sheen: none;
+  --ciyu-specular-top: none;
+  --ciyu-specular-rim: none;
+  --ciyu-specular-bottom: none;
+}
+
+.ciyu-ui[data-ui-style="primer"] .ciyu-glass,
+.ciyu-ui[data-ui-style="primer"] .ciyu-surface,
+.ciyu-ui[data-ui-style="primer"] .ciyu-apple-group,
+.ciyu-ui[data-ui-style="primer"] .ciyu-apple-settings-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-image: none !important;
+  background-color: var(--ciyu-reading-bg-solid);
+  border-radius: 6px;
+  border: 1px solid var(--ciyu-border-outer);
+  box-shadow: var(--ciyu-shadow-xs);
+}
+
+.ciyu-ui[data-ui-style="primer"] .ciyu-glass-refract::before {
+  display: none !important;
+}
+
+.ciyu-ui[data-ui-style="primer"] .ciyu-segmented,
+.ciyu-ui[data-ui-style="primer"] .ciyu-exam-subnav-track,
+.ciyu-ui[data-ui-style="primer"] .ciyu-section-tabs,
+.ciyu-ui[data-ui-style="primer"] .ciyu-mode-switch {
+  border-radius: 6px;
+  background-color: var(--ciyu-reading-subtle);
+  border: 1px solid var(--ciyu-border-outer);
+}
+
+.ciyu-ui[data-ui-style="primer"] .ciyu-seg-lens,
+.ciyu-ui[data-ui-style="primer"] .ciyu-liquid-lens,
+.ciyu-ui[data-ui-style="primer"] .ciyu-apple-nav-lens {
+  border-radius: 5px !important;
+  background: var(--ciyu-reading-bg-solid) !important;
+  border: 1px solid var(--ciyu-border-outer) !important;
+  box-shadow: 0 1px 2px rgba(31, 35, 40, 0.08) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.ciyu-ui[data-ui-style="primer"] .ciyu-btn,
+.ciyu-ui[data-ui-style="primer"] .ciyu-mini-btn,
+.ciyu-ui[data-ui-style="primer"] .ciyu-search-capsule,
+.ciyu-ui[data-ui-style="primer"] .ciyu-group-pill,
+.ciyu-ui[data-ui-style="primer"] .ciyu-apple-squircle {
+  border-radius: 6px;
+}
+
+
+/* 主题色板预览卡按各自 UI 风格呈现对应圆角与终端特征 */
+.ciyu-ui .ciyu-apple-theme-card[data-card-style="powershell"] .ciyu-mini-win {
+  border-radius: 3px;
+}
+
+.ciyu-ui .ciyu-apple-theme-card[data-card-style="powershell"] .ciyu-mini-win-card {
+  border-radius: 2px;
+}
+
+.ciyu-ui .ciyu-apple-theme-card[data-card-style="geist"] .ciyu-mini-win,
+.ciyu-ui .ciyu-apple-theme-card[data-card-style="primer"] .ciyu-mini-win {
+  border-radius: 6px;
+}
+
+/* Toast 通知同步跟随 PowerShell / Geist / Primer / Editorial UI 风格 */
+.ciyu-sonner-toaster[data-ui-style="powershell"] .ciyu-toast {
+  border-radius: 5px;
+  font-family: "Cascadia Code", "Cascadia Mono", "SF Mono", Menlo, Consolas, ui-monospace, monospace;
+}
+
+.ciyu-sonner-toaster[data-ui-style="geist"] .ciyu-toast,
+.ciyu-sonner-toaster[data-ui-style="primer"] .ciyu-toast {
+  border-radius: 8px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--ciyu-reading-bg-solid);
+}
+
+.ciyu-sonner-toaster[data-ui-style="editorial"] .ciyu-toast {
+  border-radius: 10px;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: var(--ciyu-reading-bg-solid);
 }

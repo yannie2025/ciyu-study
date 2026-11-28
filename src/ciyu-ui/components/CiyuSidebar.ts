@@ -2,6 +2,7 @@ import { CIYU_VERSION } from '../changelog';
 import { el } from '../dom';
 import { applyGlassPreferences } from '../glass';
 import { createBrandLogo, createIcon } from '../icons';
+import { attachAdaptiveProMotion } from '../promotion';
 import type {
   CiyuSidebarCallbacks,
   CiyuSidebarProps,
@@ -32,6 +33,9 @@ export function createCiyuSidebar(
   let props: CiyuSidebarProps = { ...initialProps };
 
   const root = el('aside', 'ciyu-ui ciyu-sidebar');
+  const detachProMotion = attachAdaptiveProMotion(root, () => {
+    applyGlassPreferences(root, props.preferences);
+  });
 
   const header = el('header', 'ciyu-sidebar-header');
   const brandRow = el('div', 'ciyu-brand-row');
@@ -426,6 +430,7 @@ export function createCiyuSidebar(
       sync(previous);
     },
     destroy() {
+      detachProMotion();
       navHandle.destroy();
       lookupHandle.destroy();
       vocabHandle.destroy();

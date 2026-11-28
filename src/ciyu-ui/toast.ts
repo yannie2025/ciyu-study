@@ -75,6 +75,8 @@ function syncToasterTheme(host: HTMLDivElement): void {
   if (sample) {
     const reducedMotion = sample.getAttribute('data-reduced-motion') === 'true';
     const reducedTrans = sample.getAttribute('data-reduced-transparency') === 'true';
+    const uiStyle = sample.getAttribute('data-ui-style') || 'apple';
+    host.setAttribute('data-ui-style', uiStyle);
     host.classList.toggle('ciyu-reduced-motion', reducedMotion);
     host.setAttribute('data-reduced-motion', String(reducedMotion));
     host.classList.toggle('ciyu-reduced-transparency', reducedTrans);

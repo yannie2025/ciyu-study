@@ -359,12 +359,19 @@ export interface DailyArchiveGroup {
 
 export interface ArchiveViewProps {
   groups: DailyArchiveGroup[];
+  /** 点完「定位词块」后记录的跳转前原笔记，支持一键返回 */
+  returnTarget?: {
+    path: string;
+    title: string;
+    jumpedEntryId?: string;
+  } | null;
 }
 
 export interface ArchiveViewCallbacks {
   onOpenArchiveNote?: (date: string, notePath: string) => void;
   onSelectEntry?: (term: string, notePath: string, entryId: string) => void;
   onJumpToEntryBlock?: (item: DailyArchiveItem, notePath: string) => void;
+  onReturnToOriginNote?: () => void;
   onUpdateEntryMeta?: (
     notePath: string,
     term: string,
@@ -403,14 +410,17 @@ export interface TranslationTestState {
 
 export type CiyuColorThemeId =
   | 'system'
-  | 'catppuccin-latte'
-  | 'catppuccin-mocha'
-  | 'nord'
-  | 'rose-pine-dawn'
-  | 'rose-pine'
-  | 'everforest-light'
-  | 'everforest-dark'
-  | 'solarized-light'
+  | 'pure-white'
+  | 'pure-black'
+  | 'oyaishi-silk'
+  | 'oyaishi-ink'
+  | 'powershell-classic'
+  | 'powershell-7'
+  | 'powershell-ise'
+  | 'powershell-campbell'
+  | 'powershell-onehalf'
+  | 'primer-light'
+  | 'primer-dark'
   | 'custom';
 
 export interface CiyuCustomThemeColors {

@@ -5,6 +5,7 @@
  * - 100% 适配任意宽高比容器（顶栏、侧边栏、分段器与卡片），在「降低透明度」模式自动安全退化。
  */
 
+import { getProMotionState } from './promotion';
 import { applyColorTheme } from './themes';
 import type { CiyuColorThemeId, CiyuCustomThemeColors } from './types';
 
@@ -40,11 +41,13 @@ export function applyGlassPreferences(
     ? Math.max(10, Math.min(100, Math.round(options.glassOpacity)))
     : 42;
 
+  const proMotion = getProMotionState();
   const sig = JSON.stringify([
     glassEnabled,
     options.reducedMotion,
     enableRefraction,
     rawOpacity,
+    proMotion.tier,
     options.colorTheme ?? 'system',
     options.customTheme ?? null,
   ]);
@@ -65,14 +68,14 @@ export function applyGlassPreferences(
 
   applyColorTheme(root, options.colorTheme, options.customTheme);
 
-  // iOS 27 高通透 Liquid Glass：采用轻量 GPU 模糊半径（6–12px）显著降低首次渲染与滚动开销
+  // iOS 27 高通透 Liquid Glass + 自适应 ProMotion 模糊预算（120Hz 全效 / 60Hz 轻载节能）
   if (glassEnabled) {
     const glassPct = Math.max(10, Math.min(96, Math.round(rawOpacity * 0.62)));
     const elevatedPct = Math.max(16, Math.min(96, Math.round(rawOpacity * 0.78)));
     const readingPct = Math.max(14, Math.min(96, Math.round(rawOpacity * 0.74)));
     const stickyPct = Math.min(94, Math.max(46, Math.round(rawOpacity * 0.86)));
-    const blurPx = Math.round(6 + ((100 - rawOpacity) / 90) * 4);
-    const blurHeavyPx = Math.round(8 + ((100 - rawOpacity) / 90) * 4);
+    const blurPx = Math.max(4, Math.round((6 + ((100 - rawOpacity) / 90) * 4) * proMotion.blurScale));
+    const blurHeavyPx = Math.max(6, Math.round((8 + ((100 - rawOpacity) / 90) * 4) * proMotion.blurScale));
     root.style.setProperty('--ciyu-glass-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${glassPct}%, transparent)`);
     root.style.setProperty('--ciyu-glass-bg-elevated', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${elevatedPct}%, transparent)`);
     root.style.setProperty('--ciyu-reading-bg', `color-mix(in srgb, var(--ciyu-reading-bg-solid) ${readingPct}%, transparent)`);

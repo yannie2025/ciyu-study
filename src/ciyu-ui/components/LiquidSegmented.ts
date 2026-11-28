@@ -1,4 +1,5 @@
 import { el } from '../dom';
+import { normalizeDragVelocity } from '../promotion';
 
 const prevLensIndexMap = new Map<string, number>();
 
@@ -120,18 +121,23 @@ export function attachLiquidLens(options: AttachLiquidLensOptions): void {
   function enterDrag(clientX: number): void {
     if (isDragging) return;
     isDragging = true;
+    lastMoveTime = 0;
     container.dataset.dragging = 'true';
     hoveredIdx = indexFromClientX(clientX);
     updateDragLens(clientX, 0);
   }
 
+  let lastMoveTime = 0;
   const onWinMove = (e: PointerEvent) => {
     if (!pointerDown || e.pointerId !== activePointerId) return;
     if (e.pointerType === 'mouse' && e.buttons === 0) {
       finishPointer(e, true);
       return;
     }
-    const vx = e.clientX - lastX;
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const dt = lastMoveTime > 0 ? now - lastMoveTime : 16.67;
+    lastMoveTime = now;
+    const vx = normalizeDragVelocity(e.clientX - lastX, dt);
     lastX = e.clientX;
     if (!isDragging && Math.hypot(e.clientX - startX, e.clientY - startY) > 4) {
       if (holdTimer) {

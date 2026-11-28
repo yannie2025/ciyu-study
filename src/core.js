@@ -166,15 +166,42 @@ function wordBlockId(term) {
   return `ciyu-w${Math.abs(hash).toString(36)}`;
 }
 
+function formatDerivativeBullet(rawItem) {
+  const cleaned = String(rawItem || '').trim().replace(/^\*\*([^*]+)\*\*/u, '$1');
+  const match = /^([A-Za-z][A-Za-z\s'-]*?)\s*(?:[—–-]{1,2}|[:：])\s*(.+)$/u.exec(cleaned);
+  if (match) {
+    return `  - **${markdownInline(match[1].trim())}** — ${markdownInline(match[2].trim())}`;
+  }
+  return `  - ${markdownInline(cleaned)}`;
+}
+
 function markdownEntry(entry, sourceLink = '', heading = 3, options = {}) {
   const archiveBlock = Boolean(options.archiveBlock);
+  const blockIndex = typeof options.blockIndex === 'number' && options.blockIndex > 0
+    ? Math.floor(options.blockIndex)
+    : 0;
   const lines = [];
   if (archiveBlock) lines.push('---', '');
-  lines.push(`${'#'.repeat(heading)} ${markdownInline(entry.term)}`, '', markdownInline(entry.translation), '');
+  const headingTitle = blockIndex > 0
+    ? `${blockIndex}. ${markdownInline(entry.term)}`
+    : markdownInline(entry.term);
+  lines.push(`${'#'.repeat(heading)} ${headingTitle}`, '', markdownInline(entry.translation), '');
   const alwaysShow = archiveBlock ? new Set(['roots', 'derivatives']) : new Set();
   for (const [field, label] of Object.entries(FIELD_LABELS)) {
     if (field === 'term' || field === 'translation') continue;
     const value = entry[field];
+    if (field === 'derivatives') {
+      const items = (Array.isArray(value) ? value : String(value || '').split(/\s*；\s*/u))
+        .map(s => String(s || '').trim())
+        .filter(Boolean);
+      if (items.length > 0) {
+        lines.push(`- **${label}**：`);
+        for (const item of items) lines.push(formatDerivativeBullet(item));
+      } else if (alwaysShow.has(field)) {
+        lines.push(`- **${label}**：`);
+      }
+      continue;
+    }
     const text = Array.isArray(value)
       ? value.map(markdownInline).filter(Boolean).join('；')
       : markdownInline(value || '');
@@ -195,6 +222,7 @@ function unescapeMarkdownInline(text) {
 
 function normalizeWordHeadingKey(text) {
   return unescapeMarkdownInline(text)
+    .replace(/^\d+\.\s+/u, '')
     .replace(/\s+\^[A-Za-z0-9-]+$/u, '')
     .normalize('NFKC')
     .toLowerCase()
@@ -298,18 +326,33 @@ function mergeMarkdownWordEntry(content, entry, sourceLink = '', defaultHeading 
   const meaningParts = [];
   const customLines = [];
   let existingBlockId = '';
+  let lastMetaLabel = '';
 
   for (let i = matchIndex + 1; i <= endLineIndex; i++) {
     const raw = lineRecords[i].raw;
     const trimmed = raw.trim();
-    if (!trimmed) continue;
+    if (!trimmed) {
+      lastMetaLabel = '';
+      continue;
+    }
     const blockIdMatch = /^\^([A-Za-z0-9-]+)$/u.exec(trimmed);
     if (blockIdMatch) {
       existingBlockId = blockIdMatch[1];
+      lastMetaLabel = '';
+      continue;
+    }
+    const subBullet = /^\s{2,}-\s+(.+)$/u.exec(raw);
+    if (subBullet && lastMetaLabel) {
+      const cleanedSub = subBullet[1].trim().replace(/^\*\*([^*]+)\*\*/u, '$1');
+      if (cleanedSub) {
+        const prev = existingFields.get(lastMetaLabel);
+        existingFields.set(lastMetaLabel, prev ? mergeDelimitedValues(prev, cleanedSub) : cleanedSub);
+      }
       continue;
     }
     const meta = /^-\s+\*\*([^*]+)\*\*[:：]\s*(.*)$/u.exec(trimmed);
     if (meta && knownLabels.has(meta[1])) {
+      lastMetaLabel = meta[1];
       const val = meta[2].trim();
       if (val) {
         const prev = existingFields.get(meta[1]);
@@ -318,8 +361,10 @@ function mergeMarkdownWordEntry(content, entry, sourceLink = '', defaultHeading 
         existingFields.set(meta[1], '');
       }
     } else if (!existingFields.size && customLines.length === 0 && !/^[-*>#]/u.test(trimmed)) {
+      lastMetaLabel = '';
       meaningParts.push(trimmed);
     } else {
+      lastMetaLabel = '';
       customLines.push(raw);
     }
   }
@@ -364,6 +409,16 @@ function mergeMarkdownWordEntry(content, entry, sourceLink = '', defaultHeading 
   const metaLines = [];
   for (const label of orderedLabels) {
     const val = existingFields.get(label);
+    if (label === FIELD_LABELS.derivatives) {
+      const items = String(val || '').split(/\s*；\s*/u).map(s => unescapeMarkdownInline(s).trim()).filter(Boolean);
+      if (items.length > 0) {
+        metaLines.push(`- **${label}**：`);
+        for (const item of items) metaLines.push(formatDerivativeBullet(item));
+      } else if (alwaysShowLabels.has(label) && (val !== undefined || archiveBlock)) {
+        metaLines.push(`- **${label}**：`);
+      }
+      continue;
+    }
     if (val || (alwaysShowLabels.has(label) && (val !== undefined || archiveBlock))) {
       metaLines.push(`- **${label}**：${val || ''}`);
     }
@@ -648,7 +703,7 @@ function extractMarkdownVocabEntries(content, filePath = '') {
 
     const h = /^(#{2,3})\s+(.+)$/u.exec(trimmed);
     if (h) {
-      const term = unescapeMarkdownInline(h[2]).replace(/\s+\^[A-Za-z0-9-]+$/u, '').trim();
+      const term = unescapeMarkdownInline(h[2]).replace(/^\d+\.\s+/u, '').replace(/\s+\^[A-Za-z0-9-]+$/u, '').trim();
       if (
         term &&
         term.length <= 120 &&
@@ -669,14 +724,29 @@ function extractMarkdownVocabEntries(content, filePath = '') {
     }
     if (!current || !trimmed) continue;
 
-    const meta = /^-\s+\*\*([^*]+)\*\*[:：]\s*(.+)$/u.exec(trimmed);
+    const subBullet = /^\s{2,}-\s+(.+)$/u.exec(lines[i]);
+    if (subBullet && current.lastListField) {
+      const val = unescapeMarkdownInline(subBullet[1].trim().replace(/^\*\*([^*]+)\*\*/u, '$1'));
+      if (val) {
+        current.details[current.lastListField] = [...(current.details[current.lastListField] || []), val];
+        current.hasMeta = true;
+      }
+      continue;
+    }
+    const meta = /^-\s+\*\*([^*]+)\*\*[:：]\s*(.*)$/u.exec(trimmed);
     if (meta && Object.hasOwn(fields, meta[1])) {
       const f = fields[meta[1]];
-      const val = unescapeMarkdownInline(meta[2]);
-      current.details[f] = LIST_FIELDS.has(f) ? val.split(/\s*；\s*/u).filter(Boolean) : val;
-      current.hasMeta = true;
+      const val = unescapeMarkdownInline(meta[2]).trim();
+      current.lastListField = LIST_FIELDS.has(f) ? f : '';
+      if (val) {
+        current.details[f] = LIST_FIELDS.has(f) ? val.split(/\s*；\s*/u).filter(Boolean) : val;
+        current.hasMeta = true;
+      }
     } else if (!current.meaningZh && !/^[-*>#|]/u.test(trimmed) && trimmed.length <= 300) {
+      current.lastListField = '';
       current.meaningZh = unescapeMarkdownInline(trimmed);
+    } else {
+      current.lastListField = '';
     }
   }
 

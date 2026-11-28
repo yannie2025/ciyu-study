@@ -166,8 +166,8 @@ test('archive first writes race safely, retains markdown edits and is independen
   await plugin.addCard(word, '阅读.md');
   await plugin.removeCard(plugin.cards[0].id);
   const markdown = store.contents.get(archivePath);
-  assert.match(markdown, /## curiosity/);
-  assert.match(markdown, /## question/);
+  assert.match(markdown, /## 1\. curiosity/);
+  assert.match(markdown, /## 2\. question/);
   assert.match(markdown, /\[\[阅读\]\]/);
   assert.match(markdown, /我的手工笔记/);
   assert.equal(plugin.archiveFiles()[0], archive);
@@ -975,8 +975,8 @@ test('daily archive isolates each word into a distinct block with roots/derivati
   await plugin.archive({ ...word, term: 'ubiquitous', translation: '无处不在的', roots: [], derivatives: [] }, '');
   const todayMd = store.contents.get(todayPath);
   assert.equal((todayMd.match(/^---$/gmu) || []).length, 2);
-  assert.match(todayMd, /## eloquent[\s\S]*- \*\*派生词\*\*：[\s\S]*- \*\*词根词缀\*\*：[\s\S]*\^ciyu-eloquent/);
-  assert.match(todayMd, /## ubiquitous[\s\S]*\^ciyu-ubiquitous/);
+  assert.match(todayMd, /## 1\. eloquent[\s\S]*- \*\*派生词\*\*：[\s\S]*- \*\*词根词缀\*\*：[\s\S]*\^ciyu-eloquent/);
+  assert.match(todayMd, /## 2\. ubiquitous[\s\S]*\^ciyu-ubiquitous/);
 
   // 5. User adds custom roots/affixes & derivatives to "eloquent" block -> writes back to archive md AND syncs vocab card
   await plugin.addCard({ ...word, term: 'eloquent', translation: '雄辩的', roots: [], derivatives: [] }, '');
@@ -986,8 +986,8 @@ test('daily archive isolates each word into a distinct block with roots/derivati
   });
   const updatedMd = store.contents.get(todayPath);
   assert.match(updatedMd, /- \*\*词根词缀\*\*：e-（出）\+ loqu-（说）\+ -ent（形容词后缀）/);
-  assert.match(updatedMd, /- \*\*派生词\*\*：eloquence — 雄辩；eloquently — 雄辩地/);
-  assert.match(updatedMd, /## ubiquitous[\s\S]*\^ciyu-ubiquitous/);
+  assert.match(updatedMd, /- \*\*派生词\*\*：\n  - \*\*eloquence\*\* — 雄辩\n  - \*\*eloquently\*\* — 雄辩地/);
+  assert.match(updatedMd, /## 2\. ubiquitous[\s\S]*\^ciyu-ubiquitous/);
   const entries = runtime.archiveEntries(updatedMd, todayPath);
   assert.equal(entries.length, 2);
   assert.deepEqual(entries[0].roots, ['e-（出）+ loqu-（说）+ -ent（形容词后缀）']);
@@ -1083,15 +1083,15 @@ test('word lookup automatically calls local model for roots/suffixes/derivatives
   const noteMd = store.contents.get('学习笔记.md');
   assert.match(noteMd, /### resilience/);
   assert.match(noteMd, /re-（回、再）/);
-  assert.match(noteMd, /resilient — adj\. 有韧性的/);
+  assert.match(noteMd, /\*\*resilient\*\* — adj\. 有韧性的/);
   assert.doesNotMatch(noteMd, /resiliently/);
 
   // Add selected modules into today's daily archive block
   await cb.onAddSelectedMorphemes(session.props().result, 'archive');
   const archiveMd = store.contents.get(`词屿/每日词汇/${runtime.localDay()}.md`);
-  assert.match(archiveMd, /## resilience/);
+  assert.match(archiveMd, /## 1\. resilience/);
   assert.match(archiveMd, /re-（回、再）/);
-  assert.match(archiveMd, /resilient — adj\. 有韧性的/);
+  assert.match(archiveMd, /\*\*resilient\*\* — adj\. 有韧性的/);
   assert.match(archiveMd, /\^ciyu-resilience/);
 });
 

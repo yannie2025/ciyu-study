@@ -49,6 +49,21 @@ export function createArchiveView(
       return;
     }
 
+    if (props.returnTarget && callbacks.onReturnToOriginNote) {
+      const retBar = el('div', 'ciyu-surface ciyu-archive-return-bar');
+      const retInfo = el('div', 'ciyu-paper-info');
+      retInfo.append(
+        createIcon('file-text', 'sm'),
+        el('span', 'ciyu-archive-return-text', `原笔记：${props.returnTarget.title}`)
+      );
+      const retBtn = el('button', 'ciyu-btn ciyu-btn--primary ciyu-btn--sm');
+      retBtn.type = 'button';
+      retBtn.append(createIcon('arrow-left', 'sm'), el('span', undefined, '返回原笔记'));
+      retBtn.addEventListener('click', () => callbacks.onReturnToOriginNote?.());
+      retBar.append(retInfo, retBtn);
+      root.appendChild(retBar);
+    }
+
     const list = el('ul', 'ciyu-archive-list');
 
     for (const group of props.groups) {
@@ -81,7 +96,7 @@ export function createArchiveView(
 
       if (group.entries.length > 0) {
         const entryList = el('ul', 'ciyu-archive-blocks');
-        for (const entry of group.entries) {
+        group.entries.forEach((entry, entryIdx) => {
           const isEditing = editingEntryId === entry.id;
           const isSaving = savingEntryId === entry.id;
           const roots = (entry.roots ?? []).filter(Boolean);
@@ -89,9 +104,13 @@ export function createArchiveView(
 
           const card = el('li', 'ciyu-archive-word-block');
 
-          // 顶部：原词 + 音标/词性 + 操作按钮（添加词根派生词 / 跳转词块）
+          // 顶部：序号 + 原词 + 音标/词性 + 操作按钮（添加词根派生词 / 跳转词块）
           const topRow = el('div', 'ciyu-archive-block-head');
           const titleWrap = el('div', 'ciyu-archive-block-title-wrap');
+
+          titleWrap.appendChild(
+            el('span', 'ciyu-archive-block-index', String(entryIdx + 1))
+          );
 
           const termBtn = el('button', 'ciyu-archive-word', entry.term);
           termBtn.type = 'button';
@@ -131,20 +150,39 @@ export function createArchiveView(
             actions.appendChild(editMetaBtn);
           }
 
-          const jumpBtn = el('button', 'ciyu-mini-btn');
-          jumpBtn.type = 'button';
-          jumpBtn.title = `打开 ${group.date} 笔记并定位到「${entry.term}」词块`;
-          jumpBtn.append(
-            el('span', undefined, '定位词块'),
-            createIcon('arrow-up-right', 'sm')
+          const isJumpedHere = Boolean(
+            props.returnTarget &&
+              props.returnTarget.jumpedEntryId === entry.id &&
+              callbacks.onReturnToOriginNote
           );
-          jumpBtn.addEventListener('click', () => {
-            if (callbacks.onJumpToEntryBlock) {
-              callbacks.onJumpToEntryBlock(entry, group.notePath);
-            } else {
-              callbacks.onOpenArchiveNote?.(group.date, group.notePath);
-            }
-          });
+          const jumpBtn = el(
+            'button',
+            isJumpedHere
+              ? 'ciyu-mini-btn ciyu-mini-btn--accent ciyu-toggle-stable-btn--md'
+              : 'ciyu-mini-btn ciyu-toggle-stable-btn--md'
+          );
+          jumpBtn.type = 'button';
+          if (isJumpedHere) {
+            jumpBtn.title = `一键返回跳转前的笔记：${props.returnTarget!.title}`;
+            jumpBtn.append(
+              createIcon('arrow-left', 'sm'),
+              el('span', undefined, '返回笔记')
+            );
+            jumpBtn.addEventListener('click', () => callbacks.onReturnToOriginNote?.());
+          } else {
+            jumpBtn.title = `打开 ${group.date} 笔记并定位到「${entry.term}」词块`;
+            jumpBtn.append(
+              el('span', undefined, '定位词块'),
+              createIcon('arrow-up-right', 'sm')
+            );
+            jumpBtn.addEventListener('click', () => {
+              if (callbacks.onJumpToEntryBlock) {
+                callbacks.onJumpToEntryBlock(entry, group.notePath);
+              } else {
+                callbacks.onOpenArchiveNote?.(group.date, group.notePath);
+              }
+            });
+          }
           actions.appendChild(jumpBtn);
 
           topRow.append(titleWrap, actions);
@@ -168,13 +206,23 @@ export function createArchiveView(
               metaBox.appendChild(row);
             }
             if (derivatives.length > 0) {
-              const row = el('div', 'ciyu-archive-meta-row');
+              const row = el('div', 'ciyu-archive-meta-row ciyu-archive-meta-row--stack');
               row.appendChild(el('span', 'ciyu-archive-meta-label', '派生词'));
-              const chips = el('div', 'ciyu-archive-meta-chips');
-              for (const d of derivatives) {
-                chips.appendChild(el('span', 'ciyu-chip ciyu-archive-deriv-chip', d));
+              const derivList = el('ul', 'ciyu-archive-deriv-list');
+              for (const rawDeriv of derivatives) {
+                const liDeriv = el('li', 'ciyu-archive-deriv-item');
+                const match = rawDeriv.match(/^([A-Za-z][A-Za-z\s'-]*?)\s*(?:[—–-]{1,2}|[:：])\s*(.+)$/);
+                if (match) {
+                  liDeriv.append(
+                    el('span', 'ciyu-archive-deriv-word', match[1].trim()),
+                    el('span', 'ciyu-archive-deriv-desc', match[2].trim())
+                  );
+                } else {
+                  liDeriv.appendChild(el('span', 'ciyu-archive-deriv-desc', rawDeriv));
+                }
+                derivList.appendChild(liDeriv);
               }
-              row.appendChild(chips);
+              row.appendChild(derivList);
               metaBox.appendChild(row);
             }
             card.appendChild(metaBox);
@@ -240,7 +288,7 @@ export function createArchiveView(
           }
 
           entryList.appendChild(card);
-        }
+        });
         item.appendChild(entryList);
       }
 

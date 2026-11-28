@@ -1,6 +1,7 @@
 import { CIYU_CHANGELOG, CIYU_CHANGELOG_FOREWORD, CIYU_VERSION } from '../changelog';
 import { el } from '../dom';
 import { createBrandLogo, createIcon, type IconName } from '../icons';
+import { getProMotionState, probeDisplayRefreshRate, subscribeProMotion } from '../promotion';
 import { CIYU_COLOR_THEMES, DEFAULT_CUSTOM_THEME, normalizeHexColor } from '../themes';
 import { showCiyuToast } from '../toast';
 import type {
@@ -327,6 +328,18 @@ export function createSettingsView(
   let activeCategory: AppleSettingsCategory = initialProps.requestedCategory ?? 'appearance';
   let narrowFilter: AppleSettingsCategory | 'all' = initialProps.requestedCategory ?? 'all';
   let aboutChangelogExpanded = false;
+  let proMotionBadgeEl: HTMLSpanElement | null = null;
+  const unsubProMotion = subscribeProMotion((state) => {
+    if (proMotionBadgeEl) {
+      proMotionBadgeEl.textContent = state.label;
+      proMotionBadgeEl.className =
+        state.tier === 'promotion'
+          ? 'ciyu-badge ciyu-badge--ok'
+          : state.tier === 'high'
+          ? 'ciyu-badge ciyu-badge--accent'
+          : 'ciyu-badge ciyu-badge--neutral';
+    }
+  });
 
   const root = el('section', 'ciyu-settings-view ciyu-apple-settings');
   root.setAttribute('aria-label', '模型与外观设置');
@@ -575,7 +588,7 @@ export function createSettingsView(
         return;
       }
       const now = performance.now();
-      const dt = Math.max(8, now - lastTime);
+      const dt = Math.max(4, now - lastTime);
       const dy = e.clientY - lastY;
       const vel = dy / dt;
       lastY = e.clientY;
@@ -711,6 +724,7 @@ export function createSettingsView(
         isSelected ? 'ciyu-apple-theme-card ciyu-apple-theme-card--active' : 'ciyu-apple-theme-card'
       );
       swatchBtn.type = 'button';
+      swatchBtn.dataset.cardStyle = preset.uiStyle ?? 'apple';
       swatchBtn.setAttribute('aria-pressed', String(isSelected));
       swatchBtn.title = preset.source ? `${preset.name}（${preset.source}）` : preset.name;
 
@@ -1036,6 +1050,39 @@ export function createSettingsView(
     }
     opacityRow.append(opacityHead, opacitySliderWrap, quickRow);
 
+    const pmState = getProMotionState();
+    const proMotionRow = el('div', 'ciyu-apple-row ciyu-apple-row--with-icon');
+    const pmLead = el('div', 'ciyu-apple-row-lead');
+    pmLead.appendChild(createSquircleIcon('sparkles', 'green'));
+    const pmText = el('div', 'ciyu-toggle-text');
+    pmText.append(
+      el('span', 'ciyu-toggle-title', '自适应 ProMotion 刷新率'),
+      el('span', 'ciyu-toggle-desc', '自动探测屏幕 60Hz / 90Hz / 120Hz，动态调节弹簧时长与模糊预算，静止 0 消耗')
+    );
+    pmLead.appendChild(pmText);
+
+    const pmRight = el('div', 'ciyu-toolbar-actions');
+    const pmBadge = el(
+      'span',
+      pmState.tier === 'promotion'
+        ? 'ciyu-badge ciyu-badge--ok'
+        : pmState.tier === 'high'
+        ? 'ciyu-badge ciyu-badge--accent'
+        : 'ciyu-badge ciyu-badge--neutral',
+      pmState.label
+    );
+    proMotionBadgeEl = pmBadge;
+    const pmReprobeBtn = el('button', 'ciyu-mini-btn', '重测');
+    pmReprobeBtn.type = 'button';
+    pmReprobeBtn.title = '重新采样当前显示器刷新率（跨屏或切换省电模式后可手动刷新）';
+    pmReprobeBtn.addEventListener('click', () => {
+      probeDisplayRefreshRate(true, (state) => {
+        showCiyuToast(`当前屏幕刷新率：${state.label}`, { tone: 'success' });
+      });
+    });
+    pmRight.append(pmBadge, pmReprobeBtn);
+    proMotionRow.append(pmLead, pmRight);
+
     appearancePane.appendChild(
       createAppleGroup(
         'LIQUID GLASS 材质与无障碍',
@@ -1049,6 +1096,7 @@ export function createSettingsView(
             onChange: (next) => callbacks.onToggleLiquidGlass?.(next),
           }),
           opacityRow,
+          proMotionRow,
           createToggleRow({
             title: '边缘微折射效果',
             description: '在玻璃壳层边缘叠加低幅度光学折射',
@@ -1431,6 +1479,50 @@ export function createSettingsView(
       modelRows.push(dlRow);
     }
 
+    const easterEggModels: ReadonlyArray<{
+      id: string;
+      name: string;
+      size: string;
+      tag: string;
+      reply: string;
+    }> = [
+      {
+        id: 'lingbao-honor:v99',
+        name: '王者灵宝',
+        size: '0.01 GB',
+        tag: '峡谷伴学',
+        reply: '🦊 王者灵宝正在峡谷帮你抢蓝 Buff，暂时没空背单词，请选用上方正经本地模型~',
+      },
+      {
+        id: 'talking-tom:pro',
+        name: '会说话的汤姆猫',
+        size: '1.14 MB',
+        tag: '复读机引擎',
+        reply: '🐱 汤姆猫只会用尖嗓子学你读单词，不会拆解词根，还是交给 Qwen 吧！',
+      },
+    ];
+
+    for (const egg of easterEggModels) {
+      const eggRow = el('div', 'ciyu-apple-row');
+      const eggLead = el('div', 'ciyu-toggle-text');
+      const eggHead = el('div', 'ciyu-paper-info');
+      eggHead.append(
+        el('span', 'ciyu-toggle-title', egg.name),
+        el('span', 'ciyu-badge ciyu-badge--neutral', egg.tag)
+      );
+      eggLead.append(
+        eggHead,
+        el('span', 'ciyu-toggle-desc', `${egg.id} · ${egg.size}`)
+      );
+      const eggBtn = el('button', 'ciyu-mini-btn', '选用');
+      eggBtn.type = 'button';
+      eggBtn.addEventListener('click', () => {
+        showCiyuToast(egg.reply, { tone: 'info' });
+      });
+      eggRow.append(eggLead, eggBtn);
+      modelRows.push(eggRow);
+    }
+
     modelPane.appendChild(createAppleGroup('翻译与释义模型', modelRows));
 
     // 测试翻译分组
@@ -1684,6 +1776,7 @@ export function createSettingsView(
       }
     },
     destroy() {
+      unsubProMotion();
       root.remove();
     },
   };

@@ -1168,8 +1168,10 @@ function archiveEntries(content, filePath) {
   const fields = Object.fromEntries(Object.entries(FIELD_LABELS).map(([field, label]) => [label, field]));
   const plain = text => text.replace(/\\([\\*\x60_~[\]{}#|^$!=:@])/gu, '$1')
     .replace(/&(lt|gt|amp);/gu, (_, entity) => ({ lt: '<', gt: '>', amp: '&' })[entity]);
+  let lastListField = '';
   for (let line = 0; line < lines.length; line++) {
-    const text = lines[line].trim();
+    const rawLine = lines[line];
+    const text = rawLine.trim();
     const marker = /^(~{3,}|\x60{3,})(.*)$/u.exec(text);
     if (marker) {
       if (!fence) fence = marker[1];
@@ -1179,9 +1181,12 @@ function archiveEntries(content, filePath) {
     if (fence) continue;
     const heading = /^##\s+(.+)$/u.exec(text);
     if (heading) {
+      lastListField = '';
       const rawHeading = heading[1].trim();
       const inlineBlock = /\s+\^([A-Za-z0-9-]+)$/u.exec(rawHeading);
-      const cleanTerm = plain(inlineBlock ? rawHeading.slice(0, inlineBlock.index) : rawHeading).trim();
+      const cleanTerm = plain(inlineBlock ? rawHeading.slice(0, inlineBlock.index) : rawHeading)
+        .replace(/^\d+\.\s+/u, '')
+        .trim();
       current = {
         id: filePath + ':' + line,
         term: cleanTerm,
@@ -1198,15 +1203,29 @@ function archiveEntries(content, filePath) {
       entries.push(current);
     } else if (current && (/^#\s+/u.test(text) || /^-{3,}$/u.test(text))) {
       current = null;
+      lastListField = '';
     } else if (current && text) {
       const blockAnchor = /^\^([A-Za-z0-9-]+)$/u.exec(text);
       if (blockAnchor) {
         current.blockId = blockAnchor[1];
+        lastListField = '';
+        continue;
+      }
+      const subBullet = /^\s{2,}-\s+(.+)$/u.exec(rawLine);
+      if (subBullet && lastListField) {
+        const val = plain(subBullet[1].trim().replace(/^\*\*([^*]+)\*\*/u, '$1')).trim();
+        if (val) {
+          const nextList = [...(current.details[lastListField] || []), val];
+          current.details[lastListField] = nextList;
+          if (lastListField === 'roots') current.roots = nextList;
+          if (lastListField === 'derivatives') current.derivatives = nextList;
+        }
         continue;
       }
       const metadata = /^-\s+\*\*([^*]+)\*\*[:：]\s*(.*)$/u.exec(text);
       if (metadata && Object.hasOwn(fields, metadata[1])) {
         const field = fields[metadata[1]];
+        lastListField = LIST_FIELDS.has(field) ? field : '';
         const val = plain(metadata[2]).trim();
         if (!val) continue;
         if (LIST_FIELDS.has(field)) {
@@ -1220,7 +1239,10 @@ function archiveEntries(content, filePath) {
           if (field === 'partOfSpeech') current.partOfSpeech = val;
         }
       } else if (!current.meaningZh && !/^[-*>#]/u.test(text)) {
+        lastListField = '';
         current.meaningZh = plain(text);
+      } else {
+        lastListField = '';
       }
     }
   }
@@ -1354,7 +1376,17 @@ class StudyView extends ItemView {
       dueTodayCount: due.length, connectionStatus: settings.connectionStatus,
       activeModelName: this.plugin.settings.inference?.model || settings.selectedModelId, preferences: settings.preferences,
       lookup: this.lookupSession.props(), vocabulary: { items, searchQuery: this.vocabularyQuery, dueTodayCount: due.length },
-      review: this.reviewProps(due), archive: { groups: this.groups },
+      review: this.reviewProps(due),
+      archive: {
+        groups: this.groups,
+        returnTarget: this.plugin.archiveReturnTarget
+          ? {
+              path: this.plugin.archiveReturnTarget.path,
+              title: this.plugin.archiveReturnTarget.title,
+              jumpedEntryId: this.plugin.archiveReturnTarget.jumpedEntryId,
+            }
+          : null,
+      },
       dictionaryKey: JSON.stringify(this.plugin.settings.dictionaryPacks),
       cet6IndexAvailable: this.app.vault.getAbstractFileByPath(this.plugin.settings.lastCet6Index) instanceof TFile,
       lastExamAvailable: this.app.vault.getAbstractFileByPath(this.plugin.settings.lastExamNote) instanceof TFile,
@@ -1506,8 +1538,9 @@ class StudyView extends ItemView {
           }
         },
         onJumpToEntryBlock: (item, notePath) => safeUi(() =>
-          this.plugin.openArchiveEntry(notePath, item.term, item.blockId, item.line)
+          this.plugin.openArchiveEntry(notePath, item.term, item.blockId, item.line, item.id)
         ),
+        onReturnToOriginNote: () => safeUi(() => this.plugin.returnToArchiveOrigin()),
         onUpdateEntryMeta: (notePath, term, patch) => safeUi(async () => {
           await this.plugin.updateArchiveWordMeta(notePath, term, patch);
           await this.loadArchive();

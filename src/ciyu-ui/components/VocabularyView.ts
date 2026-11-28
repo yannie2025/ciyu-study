@@ -20,6 +20,22 @@ export function createVocabularyView(
   let props = initialProps;
   let editorMode: null | { type: 'add' } | { type: 'edit'; item: VocabularyItem } = null;
   let confirmingDeleteId: string | null = null;
+  let confirmDeleteTimer: number | null = null;
+
+  function clearConfirmDelete(): void {
+    confirmingDeleteId = null;
+    if (confirmDeleteTimer !== null) {
+      window.clearTimeout(confirmDeleteTimer);
+      confirmDeleteTimer = null;
+    }
+    listHost.querySelectorAll<HTMLButtonElement>('.ciyu-icon-btn--armed').forEach((btn) => {
+      btn.classList.remove('ciyu-icon-btn--armed');
+      btn.setAttribute('aria-pressed', 'false');
+      const word = btn.dataset.word || '';
+      btn.title = '双击垃圾桶删除词条';
+      btn.setAttribute('aria-label', word ? `删除 ${word}` : '删除词条');
+    });
+  }
 
   const root = el('section', 'ciyu-vocab-view');
   root.setAttribute('aria-label', '生词本');
@@ -350,19 +366,35 @@ export function createVocabularyView(
       editBtn.appendChild(createIcon('pencil', 'sm'));
       editBtn.addEventListener('click', () => {
         editorMode = { type: 'edit', item };
-        confirmingDeleteId = null;
+        clearConfirmDelete();
         renderEditor();
         renderList();
       });
 
-      const delBtn = el('button', 'ciyu-icon-btn');
+      const isArmed = confirmingDeleteId === item.id;
+      const delBtn = el('button', isArmed ? 'ciyu-icon-btn ciyu-icon-btn--armed' : 'ciyu-icon-btn');
       delBtn.type = 'button';
-      delBtn.title = '删除词条';
-      delBtn.setAttribute('aria-label', `删除 ${item.word}`);
+      delBtn.dataset.word = item.word;
+      delBtn.title = isArmed ? `再次点击确认删除「${item.word}」` : '双击垃圾桶删除词条';
+      delBtn.setAttribute('aria-label', isArmed ? `再次点击确认删除 ${item.word}` : `删除 ${item.word}`);
+      delBtn.setAttribute('aria-pressed', String(isArmed));
       delBtn.appendChild(createIcon('trash-2', 'sm'));
       delBtn.addEventListener('click', () => {
-        confirmingDeleteId = confirmingDeleteId === item.id ? null : item.id;
-        renderList();
+        if (confirmingDeleteId === item.id) {
+          clearConfirmDelete();
+          callbacks.onDeleteItem?.(item.id);
+          return;
+        }
+        // 原地切为红色待确认态（不重建 DOM），确保快速双击垃圾桶稳定命中第二次点击
+        clearConfirmDelete();
+        confirmingDeleteId = item.id;
+        delBtn.classList.add('ciyu-icon-btn--armed');
+        delBtn.setAttribute('aria-pressed', 'true');
+        delBtn.title = `再次点击确认删除「${item.word}」`;
+        delBtn.setAttribute('aria-label', `再次点击确认删除 ${item.word}`);
+        confirmDeleteTimer = window.setTimeout(() => {
+          if (confirmingDeleteId === item.id) clearConfirmDelete();
+        }, 3000);
       });
 
       tools.append(editBtn, delBtn);
@@ -398,33 +430,6 @@ export function createVocabularyView(
 
       li.append(top, meaning, footer);
 
-      // 删除确认条
-      if (confirmingDeleteId === item.id) {
-        const confirmBar = el('div', 'ciyu-confirm-bar');
-        confirmBar.setAttribute('role', 'alertdialog');
-        confirmBar.setAttribute('aria-label', `确认删除 ${item.word}`);
-        confirmBar.appendChild(el('span', undefined, `确认删除「${item.word}」？`));
-
-        const confirmActions = el('div', 'ciyu-form-actions');
-        const cancelDel = el('button', 'ciyu-btn ciyu-btn--glass ciyu-btn--sm', '取消');
-        cancelDel.type = 'button';
-        cancelDel.addEventListener('click', () => {
-          confirmingDeleteId = null;
-          renderList();
-        });
-
-        const okDel = el('button', 'ciyu-btn ciyu-btn--danger ciyu-btn--sm', '删除');
-        okDel.type = 'button';
-        okDel.addEventListener('click', () => {
-          confirmingDeleteId = null;
-          callbacks.onDeleteItem?.(item.id);
-        });
-
-        confirmActions.append(cancelDel, okDel);
-        confirmBar.appendChild(confirmActions);
-        li.appendChild(confirmBar);
-      }
-
       ul.appendChild(li);
     }
 
@@ -450,6 +455,7 @@ export function createVocabularyView(
       renderAll();
     },
     destroy() {
+      clearConfirmDelete();
       root.remove();
     },
   };

@@ -2851,6 +2851,9 @@ class CiyuCet6WorkspaceView extends ItemView {
   async onOpen() {
     this.contentEl.addClass('ciyu-view-host');
     this.shell = this.contentEl.createDiv({ cls: 'ciyu-ui ciyu-wide-study-shell' });
+    this.detachProMotion = CiyuUI.attachAdaptiveProMotion?.(this.shell, () => {
+      if (this.shell) CiyuUI.applyGlassPreferences(this.shell, appearance(this.plugin.settings));
+    });
     this.header = this.shell.createDiv({ cls: 'ciyu-wide-study-header' });
     this.body = this.shell.createDiv({ cls: 'ciyu-wide-study-body' });
     await this.plugin.cet6Controller.syncVaultFiles();
@@ -2861,6 +2864,8 @@ class CiyuCet6WorkspaceView extends ItemView {
   }
 
   async onClose() {
+    this.detachProMotion?.();
+    this.detachProMotion = null;
     this.destroyHandles();
     setTimeout(() => {
       this.plugin.cet6Controller?.notify();
@@ -2882,6 +2887,7 @@ class CiyuCet6WorkspaceView extends ItemView {
   render() {
     if (!this.shell) return;
     const ctrl = this.plugin.cet6Controller;
+    CiyuUI.applyProMotionToRoot?.(this.shell);
     CiyuUI.applyGlassPreferences(this.shell, appearance(this.plugin.settings));
 
     this.header.empty();

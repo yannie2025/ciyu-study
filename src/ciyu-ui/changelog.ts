@@ -1,6 +1,6 @@
 import type { ChangelogEntry } from './types';
 
-export const CIYU_VERSION = '0.8.7';
+export const CIYU_VERSION = '0.8.8';
 
 export const CIYU_CHANGELOG_FOREWORD = {
   title: '🏝️ 关于「词屿」的缘起',
@@ -13,6 +13,18 @@ export const CIYU_CHANGELOG_FOREWORD = {
 } as const;
 
 export const CIYU_CHANGELOG: ReadonlyArray<ChangelogEntry> = [
+  {
+    version: '0.8.8',
+    date: '2026-11-28',
+    title: '自适应 ProMotion、5 套 UI 风格体系、归档体验升级与小彩蛋',
+    highlights: [
+      '接入自适应 ProMotion 刷新率引擎：自动探测 60Hz / 90Hz / 120Hz+ 屏幕刷新率并支持跨屏重测，动态调整弹簧时长、拖拽物理归一化与模糊预算，静止 0 消耗',
+      '全新 5 套完整 UI 风格体系：切换主题预设自动联动整套界面风格——Apple Liquid Glass、Vercel Geist / Linear 极简黑白、Oyaishi 纸墨排版、Windows Terminal Fluent 2 PowerShell 终端风与 GitHub Primer 工作台，Toast 通知同步跟随',
+      '每日归档全面升级：侧栏与左侧 Markdown 笔记双端支持大词块自动编号与派生词逐条结构化排版；点击「定位词块」后支持原地一键像素级返回原笔记原位置',
+      '生词本删除交互升级为「双击垃圾桶确认删除」，卡片高度零跳动',
+      '增加了几个小彩蛋',
+    ],
+  },
   {
     version: '0.8.7',
     date: '2026-11-28',
